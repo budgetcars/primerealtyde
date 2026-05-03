@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
 import { numberingLocale } from '../../i18n/locale';
@@ -24,8 +25,14 @@ export function ListingCard({
 	locale: Locale;
 	detailBasePath: string;
 }) {
-	const firstPhoto = item.images[0]?.trim();
-	const poster = firstPhoto ?? unsplashListingHero(item.id ?? item.title ?? '');
+	const preferred = item.images[0]?.trim();
+	const fb = unsplashListingHero(item.id ?? item.title ?? '');
+	const [imgBroken, setImgBroken] = useState(false);
+	useEffect(() => {
+		setImgBroken(false);
+	}, [item.id, preferred]);
+
+	const poster = preferred && !imgBroken ? preferred : fb;
 	const href = listingHref(detailBasePath, item.id ?? '');
 
 	return (
@@ -39,6 +46,7 @@ export function ListingCard({
 					alt=""
 					className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
 					loading="lazy"
+					onError={() => setImgBroken(true)}
 				/>
 				<span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-800 shadow-sm backdrop-blur-sm">
 					{item.propertyType}

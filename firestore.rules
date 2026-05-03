@@ -1,4 +1,16 @@
 rules_version = '2';
+
+// WICHTIG: Nach jeder Änderung deployen — sonst gilt in Production weiter der alte Stand:
+//   firebase login
+//   firebase deploy --only firestore:rules
+//
+// Für die Admin-Anmeldung (E-Mail & Passwort) in der Firebase Console:
+//   Authentication → Sign-in method → E-Mail/Passwort → Aktivieren
+//   Authentication → Settings → Authorized domains → z. B. localhost und Ihre Live-Domain ergänzen
+//
+// Hinweis: `request.auth != null` = jeder registrierte User darf listings schreiben.
+// Für produktivere Zugriffe z. B. Custom Claims + Regel auf Token.
+
 service cloud.firestore {
   match /databases/{database}/documents {
     match /listings/{listingId} {

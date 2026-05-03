@@ -17,6 +17,11 @@ pnpm-debug.log*
 .env
 .env.production
 
+# Firebase privileged keys / service accounts — never commit
+*firebase-adminsdk*.json
+*-adminsdk-*.json
+serviceAccount*.json
+
 # macOS-specific files
 .DS_Store
 

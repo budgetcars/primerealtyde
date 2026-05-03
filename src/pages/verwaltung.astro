@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { AdminApp } from '../components/react/AdminApp';
+import { withLocalePath } from '../i18n/locale';
 ---
 
 <BaseLayout
+	robots="noindex"
+	locale="de"
 	title="Verwaltung"
 	description="Prime Realty – interner Bereich zur Pflege von Immobilien-Exposés (geschützt)."
 >
@@ -16,7 +19,7 @@ import { AdminApp } from '../components/react/AdminApp';
 				Geschützter Zugang für autorisierte Mitarbeitende zur Erfassung und Aktualisierung von Objektdaten und Exposés.
 			</p>
 			<div class="mt-10">
-				<AdminApp client:only="react" />
+				<AdminApp client:only="react" listingPreviewBase={withLocalePath('/immobilie', 'de')} />
 			</div>
 		</div>
 	</div>

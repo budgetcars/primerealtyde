@@ -19,6 +19,8 @@ interface Props {
 	title: string;
 	description?: string;
 	locale?: Locale;
+	/** z. B. für `/verwaltung` — nicht für Suchmaschinen indexieren */
+	robots?: 'noindex';
 }
 
 const pathname = Astro.url.pathname;
@@ -59,6 +61,7 @@ const alternateXDefaultHref =
 		: null;
 
 const ogLocale = localeOg(locale);
+const robotsDirectives = Astro.props.robots === 'noindex' ? 'noindex, nofollow' : null;
 ---
 
 <!doctype html>
@@ -66,10 +69,12 @@ const ogLocale = localeOg(locale);
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="apple-touch-icon" href="/brand/prime-realty-logo.jpg" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
+		{robotsDirectives ? <meta name="robots" content={robotsDirectives} /> : null}
 		<meta name="theme-color" content="#0f2744" />
 		<link rel="canonical" href={canonicalURL.href} />
 		{
@@ -92,7 +97,7 @@ const ogLocale = localeOg(locale);
 			Astro.site ? (
 				<meta
 					property="og:image"
-					content={`${String(Astro.site).replace(/\/?$/, '')}/brand/prime-realty-logo.jpg`}
+					content={`${String(Astro.site).replace(/\/?$/, '')}/brand/prime-realty-logo.png`}
 				/>
 			) : null
 		}

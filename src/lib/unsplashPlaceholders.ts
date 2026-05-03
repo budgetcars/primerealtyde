@@ -1,14 +1,17 @@
 /**
  * Platzhalterbilder (Unsplash Hotlink nach deren Lizenz – Attribution geschätzt).
  * https://unsplash.com/license
+ *
+ * Einzelne photos können 404 liefern, wenn Unsplash sie entfernt — URLs bei Bedarf per
+ * `curl -sS -o /dev/null -w '%{http_code}' 'https://images.unsplash.com/photo-…'` prüfen.
  */
 
 const UNSPLASH_REAL_ESTATE_IMAGES = [
 	'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=82',
-	'https://images.unsplash.com/photo-1600585154363-67eb59e008e9?auto=format&fit=crop&w=1400&q=82',
+	'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1400&q=82',
 	'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1400&q=82',
 	'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=82',
-	'https://images.unsplash.com/photo-1519824145371-296894a34499?auto=format&fit=crop&w=1400&q=82',
+	'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=1400&q=82',
 	'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1400&q=82',
 ];
 
@@ -21,9 +24,9 @@ function stableHash(seed: string): number {
 	return Math.abs(h);
 }
 
-/** Vollbreite Hero-Kulisse (Unsplash Lizenz — regionaler Küstencharakter). */
+/** Vollbreite Hero-Kulisse (Unsplash Lizenz — Küsten-/Meeresmotiv). */
 export const HOME_HERO_BACKDROP =
-	'https://images.unsplash.com/photo-1565538810643-ba5d61f84c6f?auto=format&fit=crop&w=2400&q=82';
+	'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&q=82';
 
 /** Stabile Auswahl eines Motivs pro Listing (ohne Netzwerk). */
 export function unsplashListingHero(seed?: string): string {

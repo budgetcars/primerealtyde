@@ -74,14 +74,14 @@ const categoryHeroImg = unsplashListingHero('je-category-real-estate');
 					{h.heroH1}
 				</h1>
 
-				<form action={listingsHref} method="get" class="mx-auto mt-8 w-full max-w-5xl text-left hero-search-shell md:mt-10">
+				<form action={listingsHref} method="get" class="hero-search-shell mx-auto mt-8 w-full max-w-[min(100%,72rem)] text-left md:mt-10">
 					<p class="sr-only">
 						{h.searchLabel}. {h.heroSearchFootnote}
 					</p>
 					<div
-						class="rounded-2xl border border-white/[0.22] bg-slate-950/45 p-4 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:p-5 md:rounded-[1.1rem]"
+						class="rounded-2xl border border-white/[0.22] bg-slate-950/45 px-3 py-3 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:px-3.5 sm:py-3.5 md:rounded-[1.1rem]"
 					>
-						<div class="border-b border-white/[0.12] pb-4 md:pb-5">
+						<div class="flex min-h-[2.75rem] flex-nowrap items-stretch gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:thin] sm:gap-2.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20">
 							<label class="sr-only" for={`hero-search-q-${locale}`}>
 								{searchFilt.keywordLegend}
 							</label>
@@ -91,70 +91,48 @@ const categoryHeroImg = unsplashListingHero('je-category-real-estate');
 								id={`hero-search-q-${locale}`}
 								autocomplete="off"
 								placeholder={h.searchPlaceholder}
-								class="hero-search-q h-11 w-full rounded-xl border border-white/10 bg-white px-3.5 text-sm font-medium text-slate-900 shadow-inner placeholder:text-slate-400 outline-none ring-amber-400/0 transition focus:border-amber-400/85 focus:ring-[3px] focus:ring-amber-400/35"
+								class="hero-search-q h-11 min-w-[min(100%,17rem)] flex-1 shrink-0 basis-[min(36%,22rem)] rounded-xl border border-white/10 bg-white px-3.5 text-sm font-medium text-slate-900 shadow-inner placeholder:text-slate-400 outline-none ring-amber-400/0 transition focus:border-amber-400/85 focus:ring-[3px] focus:ring-amber-400/35 sm:min-w-[14rem] sm:flex-1 sm:basis-0"
 							/>
-						</div>
 
-						<div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-12 xl:items-end xl:gap-3">
-							<div class="flex flex-col gap-2 xl:col-span-3">
-								<label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/72" for={`hero-country-${locale}`}>
-									{searchFilt.countryLegend}
-								</label>
-								<select
-									name="country"
-									id={`hero-country-${locale}`}
-									class="hero-search-select"
-								>
-									{
-										searchFilt.countries.map(({ slug, label }) => (
-											<option value={slug}>{label}</option>
-										))
-									}
-								</select>
-							</div>
-							<div class="flex flex-col gap-2 xl:col-span-3">
-								<label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/72" for={`hero-type-${locale}`}>
-									{searchFilt.typeLegend}
-								</label>
-								<select name="type" id={`hero-type-${locale}`} class="hero-search-select">
-									{
-										searchFilt.types.map(({ slug, label }) => (
-											<option value={slug}>{label}</option>
-										))
-									}
-								</select>
-							</div>
-							<div class="flex flex-col gap-2 xl:col-span-3">
-								<label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/72" for={`hero-price-${locale}`}>
-									{searchFilt.priceLegend}
-								</label>
-								<select name="price_max" id={`hero-price-${locale}`} class="hero-search-select">
-									{
-										searchFilt.prices.map(({ value, label }) => (
-											<option value={value}>{label}</option>
-										))
-									}
-								</select>
-							</div>
-							<div class="flex flex-col gap-2 sm:col-span-2 xl:col-span-3">
-								<span class="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-transparent xl:block" aria-hidden="true">
-									&nbsp;
-								</span>
-								<div class="flex min-h-[2.75rem] flex-col gap-2 sm:flex-row sm:items-stretch">
-									<button
-										type="submit"
-										class="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-[#1a2d4a] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#243d5c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
-									>
-										{h.searchSubmit}
-									</button>
-									<a
-										href={listingsHref}
-										class="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/[0.08] px-4 text-sm font-semibold text-white/95 backdrop-blur-sm transition hover:border-white/40 hover:bg-white/[0.14]"
-									>
-										{listingsCopy.allListings}
-									</a>
-								</div>
-							</div>
+							<label class="sr-only" for={`hero-country-${locale}`}>{searchFilt.countryLegend}</label>
+							<select name="country" id={`hero-country-${locale}`} class="hero-search-select hero-search-select-inline shrink-0">
+								{
+									searchFilt.countries.map(({ slug, label }) => (
+										<option value={slug}>{label}</option>
+									))
+								}
+							</select>
+
+							<label class="sr-only" for={`hero-type-${locale}`}>{searchFilt.typeLegend}</label>
+							<select name="type" id={`hero-type-${locale}`} class="hero-search-select hero-search-select-inline shrink-0">
+								{
+									searchFilt.types.map(({ slug, label }) => (
+										<option value={slug}>{label}</option>
+									))
+								}
+							</select>
+
+							<label class="sr-only" for={`hero-price-${locale}`}>{searchFilt.priceLegend}</label>
+							<select name="price_max" id={`hero-price-${locale}`} class="hero-search-select hero-search-select-inline shrink-0">
+								{
+									searchFilt.prices.map(({ value, label }) => (
+										<option value={value}>{label}</option>
+									))
+								}
+							</select>
+
+							<button
+								type="submit"
+								class="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-[#1a2d4a] px-4 text-sm font-semibold text-white shadow-md transition hover:bg-[#243d5c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 sm:px-5"
+							>
+								{h.searchSubmit}
+							</button>
+							<a
+								href={listingsHref}
+								class="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/[0.08] px-3 text-xs font-semibold uppercase tracking-wide text-white/95 backdrop-blur-sm transition hover:border-white/40 hover:bg-white/[0.14] sm:min-w-[3.25rem] sm:px-4 sm:normal-case sm:tracking-normal sm:text-sm"
+							>
+								{listingsCopy.allListings}
+							</a>
 						</div>
 					</div>
 				</form>
@@ -394,6 +372,13 @@ const categoryHeroImg = unsplashListingHero('je-category-real-estate');
 	}
 	.je-card {
 		scroll-snap-align: start;
+	}
+
+	.hero-search-shell .hero-search-select.hero-search-select-inline {
+		box-sizing: border-box;
+		width: auto;
+		min-width: 8.75rem;
+		max-width: 11rem;
 	}
 
 	.hero-search-shell .hero-search-select {

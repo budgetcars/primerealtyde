@@ -42,6 +42,7 @@ export function ListingDetailClient({
 	const [listing, setListing] = useState<Listing | null>(null);
 	const [loading, setLoading] = useState(() => !skipped);
 	const [error, setError] = useState<string | null>(null);
+	const [heroImgBroken, setHeroImgBroken] = useState(false);
 
 	useEffect(() => {
 		if (skipped) return;
@@ -71,6 +72,10 @@ export function ListingDetailClient({
 			cancelled = true;
 		};
 	}, [id, skipped]);
+
+	useEffect(() => {
+		setHeroImgBroken(false);
+	}, [listing?.id]);
 
 	if (skipped) return null;
 	if (error)
@@ -102,19 +107,25 @@ export function ListingDetailClient({
 		);
 
 	const firstPhoto = listing.images[0]?.trim();
-	const heroUrl = firstPhoto ?? unsplashListingHero(listing.id ?? listing.title ?? '');
+	const heroFallback = unsplashListingHero(listing.id ?? listing.title ?? '');
+	const heroUrl = firstPhoto && !heroImgBroken ? firstPhoto : heroFallback;
 	const mapHref =
 		listing.latitude != null && listing.longitude != null
 			? `https://www.openstreetmap.org/?mlat=${listing.latitude}&mlon=${listing.longitude}#map=14/${listing.latitude}/${listing.longitude}`
 			: null;
 
-	const heroAlt = firstPhoto ? '' : `${listing.title} – ${L.imgAltFallback}`;
+	const heroAlt = firstPhoto && !heroImgBroken ? '' : `${listing.title} – ${L.imgAltFallback}`;
 
 	return (
 		<div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
 			<div>
 				<div className="glass-panel-soft overflow-hidden p-1">
-					<img src={heroUrl} alt={heroAlt} className="aspect-[4/3] w-full rounded-xl object-cover" />
+					<img
+						src={heroUrl}
+						alt={heroAlt}
+						className="aspect-[4/3] w-full rounded-xl object-cover"
+						onError={() => setHeroImgBroken(true)}
+					/>
 				</div>
 				{listing.images.length > 1 && (
 					<div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">

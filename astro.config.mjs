@@ -6,7 +6,8 @@ import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://prime-realty.de',
+  /** Canonical-/OG-Basis nach Deployment; eigene Domain in Firebase Hosting anbindbar */
+  site: 'https://ai711-be7f7.web.app',
 
   vite: {
     plugins: [tailwindcss()]

@@ -7,6 +7,7 @@ const homeHref = withLocalePath('/', 'ru');
 ---
 
 <BaseLayout
+	robots="noindex"
 	locale="ru"
 	title="Admin"
 	description="Prime Realty — internal listings console (authorised users only)."
@@ -21,7 +22,7 @@ const homeHref = withLocalePath('/', 'ru');
 				<a href={homeHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">← Back to website</a>
 			</p>
 			<div class="mt-10">
-				<AdminApp client:only="react" />
+				<AdminApp client:only="react" listingPreviewBase={withLocalePath('/immobilie', 'ru')} />
 			</div>
 		</div>
 	</div>
