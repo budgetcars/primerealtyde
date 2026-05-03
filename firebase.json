@@ -5,6 +5,28 @@
   "hosting": {
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "redirects": [
+      {
+        "source": "/verwaltung",
+        "destination": "/admin",
+        "type": 301
+      },
+      {
+        "source": "/en/verwaltung",
+        "destination": "/en/admin",
+        "type": 301
+      },
+      {
+        "source": "/ru/verwaltung",
+        "destination": "/ru/admin",
+        "type": 301
+      },
+      {
+        "source": "/zh/verwaltung",
+        "destination": "/zh/admin",
+        "type": 301
+      }
+    ],
     "headers": [
       {
         "source": "/assets/**",

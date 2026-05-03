@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
 	signInWithEmailAndPassword,
 	signOut,
@@ -19,8 +19,15 @@ import {
 } from 'firebase/firestore';
 import { parseOpenImmoXml } from '../../lib/xml/parseOpenImmo';
 import { detectXmlRootTag, parseAdriomXml } from '../../lib/xml/parseAdriom';
+import { stableOpenImmoStagingKey, validateListingXmlImport } from '../../lib/xml/listingXmlImportValidation';
 import type { Listing, ListingInput, ListingSource } from '../../lib/types';
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from '../../lib/firebase/client';
+import {
+	XmlImportReviewDialog,
+	type XmlImportStagingRowAdriom,
+	type XmlImportStagingRowOpenImmo,
+	type XmlStagingState,
+} from './XmlImportReviewDialog';
 
 const LISTINGS = 'listings';
 
@@ -83,6 +90,15 @@ function parseOptionalNumber(raw: string): number | null {
 	return Number.isFinite(n) ? n : null;
 }
 
+/** UI einen Frame zum Zeichnen geben (Ladezustand sichtbar), bevor schwere Sync-Arbeit startet. */
+function yieldToUi(): Promise<void> {
+	return new Promise((resolve) => {
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => resolve());
+		});
+	});
+}
+
 type AdminTab = 'inventory' | 'manual' | 'xml';
 
 export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
@@ -123,6 +139,11 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [xmlText, setXmlText] = useState('');
 	const [xmlFeedUrl, setXmlFeedUrl] = useState('https://adriom.me/api/listings.xml');
 	const [langPref, setLangPref] = useState<'de' | 'en'>('de');
+	const [xmlDialogOpen, setXmlDialogOpen] = useState(false);
+	const [xmlStaging, setXmlStaging] = useState<XmlStagingState | null>(null);
+	const [xmlStagingLoading, setXmlStagingLoading] = useState(false);
+	const [xmlPrepareProgress, setXmlPrepareProgress] = useState<{ done: number; total: number } | null>(null);
+	const xmlPrepareCancelledRef = useRef(false);
 
 	const loadInventory = useCallback(async () => {
 		if (skipped) return;
@@ -311,7 +332,9 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const text = await res.text();
 			setXmlText(text);
-			setStatus(`Daten geladen (${text.length.toLocaleString('de-DE')} Zeichen). „Objekte übernehmen“ zum Speichern.`);
+			setStatus(
+				`Daten geladen (${text.length.toLocaleString('de-DE')} Zeichen). Anschließend „Analysieren & Vorschau“ ausführen.`,
+			);
 		} catch (e: unknown) {
 			const msg = e instanceof Error ? e.message : 'Laden fehlgeschlagen';
 			setStatus(
@@ -322,30 +345,202 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		}
 	}
 
-	async function submitXml(ev: FormEvent) {
-		ev.preventDefault();
-		setStatus(null);
-		setBusy(true);
-		try {
-			const raw = xmlText.trim();
-			if (!raw) {
-				setStatus('Bitte Inhalt einfügen oder per URL laden.');
-				return;
-			}
-			const kind = detectXmlRootTag(raw);
-			const db = getDb();
+	function closeXmlImportDialog() {
+		if (busy) return;
+		xmlPrepareCancelledRef.current = true;
+		setXmlDialogOpen(false);
+		setXmlStaging(null);
+		setXmlStagingLoading(false);
+		setXmlPrepareProgress(null);
+	}
 
-			if (kind === 'listings') {
+	const XML_PREPARE_CHUNK = 80;
+
+	function analyzeXmlStaging() {
+		setStatus(null);
+		const raw = xmlText.trim();
+		if (!raw) {
+			setStatus('Bitte Inhalt einfügen oder per URL laden.');
+			return;
+		}
+
+		xmlPrepareCancelledRef.current = false;
+		setXmlStaging(null);
+		setXmlDialogOpen(true);
+		setXmlStagingLoading(true);
+		setXmlPrepareProgress(null);
+
+		void (async () => {
+			await yieldToUi();
+			try {
+				const kind = detectXmlRootTag(raw);
 				const langs = langPref === 'de' ? ['de', 'en', 'sr', 'ru'] : ['en', 'de', 'sr', 'ru'];
-				const { feedMeta, items } = parseAdriomXml(raw, langs);
-				if (!items.length) {
-					setStatus('Keine Einträge in der geladenen Liste erkannt.');
+
+				if (kind === 'unknown') {
+					setStatus('Unbekanntes Format – der Inhalt konnte nicht verarbeitet werden.');
+					setXmlDialogOpen(false);
+					setXmlStagingLoading(false);
 					return;
 				}
+
+				await yieldToUi();
+
+				if (kind === 'listings') {
+					const { feedMeta, items } = parseAdriomXml(raw, langs);
+					if (xmlPrepareCancelledRef.current) return;
+					if (!items.length) {
+						setStatus('Keine Einträge in der geladenen Liste erkannt.');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
+					const rows: XmlImportStagingRowAdriom[] = [];
+					for (let start = 0; start < items.length; start += XML_PREPARE_CHUNK) {
+						if (xmlPrepareCancelledRef.current) {
+							setXmlStagingLoading(false);
+							setXmlPrepareProgress(null);
+							return;
+						}
+						const end = Math.min(start + XML_PREPARE_CHUNK, items.length);
+						for (let idx = start; idx < end; idx++) {
+							const it = items[idx]!;
+							const v = validateListingXmlImport(it, { kind: 'adriom', docId: it.firestoreDocumentId });
+							rows.push({
+								format: 'adriom' as const,
+								rowKey: `adriom-${idx}-${it.firestoreDocumentId}`,
+								checked: v.errors.length === 0,
+								errors: v.errors,
+								warnings: v.warnings,
+								payload: it,
+							});
+						}
+						setXmlPrepareProgress({ done: end, total: items.length });
+						await new Promise<void>((resolve) => {
+							queueMicrotask(() => setTimeout(resolve, 0));
+						});
+					}
+
+					if (xmlPrepareCancelledRef.current) {
+						setXmlStagingLoading(false);
+						setXmlPrepareProgress(null);
+						return;
+					}
+
+					setXmlStaging({ format: 'adriom', feedMeta, rows });
+					const withErrors = rows.filter((r) => r.errors.length > 0).length;
+					setStatus(
+						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge${withErrors ? ` (${withErrors} mit kritischen Meldungen)` : ''}. Blättern und Auswahl treffen.`,
+					);
+				} else if (kind === 'openimmo') {
+					const parsed = parseOpenImmoXml(raw);
+					if (xmlPrepareCancelledRef.current) return;
+					if (!parsed.length) {
+						setStatus('Keine Immobilien in den Daten gefunden.');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
+					const rows: XmlImportStagingRowOpenImmo[] = [];
+					for (let start = 0; start < parsed.length; start += XML_PREPARE_CHUNK) {
+						if (xmlPrepareCancelledRef.current) {
+							setXmlStagingLoading(false);
+							setXmlPrepareProgress(null);
+							return;
+						}
+						const end = Math.min(start + XML_PREPARE_CHUNK, parsed.length);
+						for (let idx = start; idx < end; idx++) {
+							const listing = parsed[idx]!;
+							const v = validateListingXmlImport(listing, { kind: 'openimmo', rowIndex: idx });
+							rows.push({
+								format: 'openimmo' as const,
+								rowKey: stableOpenImmoStagingKey(idx, listing),
+								checked: v.errors.length === 0,
+								errors: v.errors,
+								warnings: v.warnings,
+								listing,
+							});
+						}
+						setXmlPrepareProgress({ done: end, total: parsed.length });
+						await new Promise<void>((resolve) => {
+							queueMicrotask(() => setTimeout(resolve, 0));
+						});
+					}
+
+					if (xmlPrepareCancelledRef.current) {
+						setXmlStagingLoading(false);
+						setXmlPrepareProgress(null);
+						return;
+					}
+
+					setXmlStaging({ format: 'openimmo', rows });
+					const withErrors = rows.filter((r) => r.errors.length > 0).length;
+					setStatus(
+						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge${withErrors ? ` (${withErrors} mit kritischen Meldungen)` : ''}. Blättern und Auswahl treffen.`,
+					);
+				}
+			} catch (e: unknown) {
+				setStatus(e instanceof Error ? e.message : 'Analyse fehlgeschlagen');
+				setXmlDialogOpen(false);
+			} finally {
+				setXmlStagingLoading(false);
+				setXmlPrepareProgress(null);
+			}
+		})();
+	}
+
+	function toggleXmlStagingRow(rowKey: string, checked: boolean) {
+		setXmlStaging((prev) =>
+			prev ? { ...prev, rows: prev.rows.map((r) => (r.rowKey === rowKey ? { ...r, checked } : r)) } : null,
+		);
+	}
+
+	function selectOnlyValidXmlRows() {
+		setXmlStaging((prev) =>
+			prev
+				? {
+						...prev,
+						rows: prev.rows.map((r) => ({ ...r, checked: r.errors.length === 0 })),
+					}
+				: null,
+		);
+	}
+
+	function deselectAllXmlRows() {
+		setXmlStaging((prev) =>
+			prev ? { ...prev, rows: prev.rows.map((r) => ({ ...r, checked: false })) } : null,
+		);
+	}
+
+	async function commitXmlStaging() {
+		if (!xmlStaging) return;
+
+		let adSlice: (ListingInput & { firestoreDocumentId: string })[] | null = null;
+		let openImmoListings: ListingInput[] | null = null;
+		if (xmlStaging.format === 'adriom') {
+			adSlice = xmlStaging.rows.filter((r) => r.checked).map((r) => r.payload);
+			if (!adSlice.length) {
+				setStatus('Keine Objekte ausgewählt.');
+				return;
+			}
+		} else {
+			openImmoListings = xmlStaging.rows.filter((r) => r.checked).map((r) => r.listing);
+			if (!openImmoListings.length) {
+				setStatus('Keine Objekte ausgewählt.');
+				return;
+			}
+		}
+
+		setBusy(true);
+		setStatus(null);
+		try {
+			const db = getDb();
+			if (adSlice && xmlStaging.format === 'adriom') {
 				const chunkSize = 400;
 				let upserted = 0;
-				for (let i = 0; i < items.length; i += chunkSize) {
-					const slice = items.slice(i, i + chunkSize);
+				for (let i = 0; i < adSlice.length; i += chunkSize) {
+					const slice = adSlice.slice(i, i + chunkSize);
 					const refs = slice.map((it) => doc(db, LISTINGS, it.firestoreDocumentId));
 					const snaps = await Promise.all(refs.map((r) => getDoc(r)));
 					const batch = writeBatch(db);
@@ -366,21 +561,15 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 					}
 					await batch.commit();
 				}
-				const meta = feedMeta.generated ? ` (Stand der Quelle: ${feedMeta.generated})` : '';
-				setStatus(`${upserted} Objekt(e) übernommen${meta}. Bestehende Einträge werden bei erneutem Übernehmen aktualisiert.`);
-				await loadInventory();
-				return;
-			}
-
-			if (kind === 'openimmo') {
-				const parsed = parseOpenImmoXml(raw);
-				if (!parsed.length) {
-					setStatus('Keine Immobilien in den Daten gefunden.');
-					return;
-				}
+				const fm = xmlStaging.feedMeta;
+				const meta = fm.generated ? ` (Stand der Quelle: ${fm.generated})` : '';
+				setStatus(
+					`${upserted} Objekt(e) übernommen${meta}. Bestehende Einträge werden bei erneutem Übernehmen aktualisiert.`,
+				);
+			} else if (openImmoListings && xmlStaging.format === 'openimmo') {
 				const chunkSize = 450;
-				for (let i = 0; i < parsed.length; i += chunkSize) {
-					const chunk = parsed.slice(i, i + chunkSize);
+				for (let i = 0; i < openImmoListings.length; i += chunkSize) {
+					const chunk = openImmoListings.slice(i, i + chunkSize);
 					const batch = writeBatch(db);
 					for (const item of chunk) {
 						const ref = doc(collection(db, LISTINGS));
@@ -388,13 +577,12 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 					}
 					await batch.commit();
 				}
-				setStatus(`${parsed.length} Objekt(e) übernommen (neue Einträge).`);
+				setStatus(`${openImmoListings.length} Objekt(e) übernommen (neue Einträge).`);
 				setXmlText('');
-				await loadInventory();
-				return;
 			}
-
-			setStatus('Unbekanntes Format – der Inhalt konnte nicht verarbeitet werden.');
+			setXmlDialogOpen(false);
+			setXmlStaging(null);
+			await loadInventory();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Übernehmen fehlgeschlagen');
 		} finally {
@@ -426,7 +614,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	if (!user) {
 		return (
 			<form onSubmit={login} className="glass-panel-soft mx-auto max-w-md px-8 py-10">
-				<h2 className="text-xl font-semibold text-gray-900">Verwaltung anmelden</h2>
+				<h2 className="text-xl font-semibold text-gray-900">Admin anmelden</h2>
 				<p className="mt-2 text-sm text-slate-600">
 					Nur für autorisierte Nutzer. Accounts legen Sie in der Firebase Console unter Authentication an (E-Mail & Passwort).
 				</p>
@@ -498,7 +686,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		<div className="space-y-8">
 			<div className="glass-panel-soft flex flex-wrap items-center justify-between gap-4 px-6 py-4">
 				<div>
-					<p className="text-sm font-medium text-slate-600">Administration</p>
+					<p className="text-sm font-medium text-slate-600">Admin</p>
 					<p className="mt-0.5 text-sm text-slate-700">
 						Angemeldet als <span className="font-semibold text-gray-900">{user.email}</span>
 					</p>
@@ -754,7 +942,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			) : null}
 
 			{tab === 'xml' ? (
-				<form onSubmit={submitXml} className="grid max-w-4xl gap-4">
+				<div className="grid max-w-4xl gap-4">
 					<div className="glass-panel-soft grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-end">
 						<label className="block text-sm font-medium text-slate-700">
 							Öffentliche Liste (URL)
@@ -815,18 +1003,38 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						/>
 					</label>
 					<p className="text-sm text-slate-600">
-						Wiederholtes Übernehmen aktualisiert vorhandene Objekte, wenn die Quelle dieselben Kennungen liefert –
-						ansonsten entstehen neue Einträge.
+						Zuerst analysieren – es öffnet sich ein Dialog mit Prüfhinweisen. Sie wählen die Zeilen und bestätigen
+						dann den Import. Bei Adriom gleichen Dokumenten-IDs entspricht eine erneute Übernahme einem Update –
+						beim Import aus OpenImmo entstehen pro Zeile neue Firestore-Einträge.
 					</p>
-					<button
-						type="submit"
-						disabled={busy || !xmlText.trim()}
-						className="w-fit rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-brand-900 hover:bg-accent-muted disabled:opacity-50"
-					>
-						{busy ? 'Übernehmen…' : 'Objekte übernehmen'}
-					</button>
-				</form>
+					<div className="flex flex-wrap gap-3">
+						<button
+							type="button"
+							disabled={busy || !xmlText.trim()}
+							onClick={analyzeXmlStaging}
+							className="w-fit rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-brand-900 hover:bg-accent-muted disabled:opacity-50"
+						>
+							Analysieren &amp; Vorschau
+						</button>
+						{busy && xmlDialogOpen ? (
+							<span className="self-center text-slate-500 text-sm">Import läuft…</span>
+						) : null}
+					</div>
+				</div>
 			) : null}
+
+			<XmlImportReviewDialog
+				open={xmlDialogOpen}
+				staging={xmlStaging}
+				loading={xmlStagingLoading}
+				prepareProgress={xmlPrepareProgress}
+				busy={busy}
+				onClose={closeXmlImportDialog}
+				onChangeRowChecked={toggleXmlStagingRow}
+				onSelectOnlyValid={selectOnlyValidXmlRows}
+				onDeselectAll={deselectAllXmlRows}
+				onConfirmImport={() => void commitXmlStaging()}
+			/>
 		</div>
 	);
 }

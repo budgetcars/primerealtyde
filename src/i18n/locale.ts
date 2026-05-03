@@ -14,7 +14,7 @@ const mirroredCanonical = new Set([
 	'/datenschutz',
 	'/agb',
 	'/nutzungsbedingungen',
-	'/verwaltung',
+	'/admin',
 ]);
 
 const secondaryLocales = ['en', 'ru', 'zh'] as const satisfies readonly Omit<Locale, 'de'>[];
