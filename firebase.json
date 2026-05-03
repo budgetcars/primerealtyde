@@ -9,6 +9,16 @@
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "redirects": [
         {
+          "regex": "^/de/?$",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "regex": "^/de/(?P<rest>.+)$",
+          "destination": "/:rest",
+          "type": 301
+        },
+        {
           "source": "/verwaltung",
           "destination": "/admin",
           "type": 301
