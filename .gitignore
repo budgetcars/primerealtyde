@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# Firebase CLI local cache / emulator data
+.firebase/
+
 # Firebase privileged keys / service accounts — never commit
 *firebase-adminsdk*.json
 *-adminsdk-*.json
