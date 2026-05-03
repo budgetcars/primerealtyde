@@ -23,19 +23,22 @@ const navItems = [
 	class="sticky top-0 z-50 border-b border-white/60 bg-white/75 shadow-sm shadow-slate-900/[0.04] backdrop-blur-2xl backdrop-saturate-150"
 >
 	<div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 md:py-4">
-		<a href={withLocalePath('/', locale)} class="group flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 md:flex-initial">
+		<a
+			href={withLocalePath('/', locale)}
+			class="group flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 md:flex-initial md:gap-4"
+			aria-label="Prime Realty"
+		>
 			<img
 				src="/brand/prime-realty-logo.jpg"
-				alt="Prime Realty Ferienimmobilien"
+				alt=""
 				width="1024"
 				height="1024"
-				class="h-11 w-auto max-w-[12.5rem] shrink-0 object-contain object-left drop-shadow-sm transition group-hover:opacity-95 sm:max-w-[15rem] md:h-[3.35rem] md:max-w-[17rem]"
+				class="h-10 w-auto max-h-10 shrink-0 object-contain object-left rounded-none border-0 shadow-none ring-0 outline-none transition group-hover:opacity-92 sm:h-11 sm:max-h-11 md:h-12 md:max-h-12"
 				loading="eager"
 				decoding="async"
 			/>
-			<span class="sr-only">Prime Realty · {L.tagline}</span>
-			<span class="hidden min-w-0 max-w-[12rem] text-xs font-medium leading-snug text-slate-600 lg:inline lg:max-w-[14rem]">
-				{L.tagline}
+			<span class="font-heading-display text-lg font-semibold tracking-tight text-gray-900 sm:text-xl">
+				Prime Realty
 			</span>
 		</a>
 		<div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
