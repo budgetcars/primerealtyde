@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import type { Locale } from '../i18n/locale';
+import { contactCopy } from '../i18n/copy/contact';
+import { withLocalePath } from '../i18n/locale';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const c = contactCopy[locale] as typeof contactCopy.de;
+---
+
+<BaseLayout locale={locale} title={String(c.title)} description={String(c.metaDescription)}>
+	<section class="relative border-b border-white/40 pb-12 pt-12 md:pb-16 md:pt-16">
+		<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_65%_-10%,rgba(251,191,36,0.16),transparent_50%)]" />
+		<div class="relative mx-auto max-w-7xl px-4">
+			<div class="glass-panel px-8 py-10">
+				<h1 class="font-heading-display text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">{c.title}</h1>
+				<p class="mt-4 text-xl font-semibold text-amber-950">{c.line}</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="mx-auto max-w-7xl px-4 py-16 md:py-20">
+		<div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14">
+			<div class="space-y-8">
+				<div class="glass-panel p-8">
+					<h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500">{c.address}</h2>
+					<address class="mt-4 not-italic text-base leading-relaxed text-slate-700">
+						Panoramastraße 13<br />
+						73765 Neuhausen
+					</address>
+				</div>
+
+				<div class="glass-panel p-8">
+					<h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500">{c.reachability}</h2>
+					<dl class="mt-4 space-y-4 text-slate-700">
+						<div>
+							<dt class="text-xs font-medium text-slate-500">{c.emailLabel}</dt>
+							<dd class="mt-1">
+								<a href="mailto:info@prime-realty.de" class="text-lg font-semibold text-amber-900 hover:text-amber-950">
+									info@prime-realty.de
+								</a>
+							</dd>
+						</div>
+						<div>
+							<dt class="text-xs font-medium text-slate-500">{c.phoneLabel}</dt>
+							<dd class="mt-1">
+								<a href="tel:+4971125255610" class="text-lg font-medium text-gray-900 hover:text-amber-900">
+									+49 (0) 711 252 55 610
+								</a>
+							</dd>
+						</div>
+					</dl>
+				</div>
+			</div>
+
+			<div class="glass-panel p-8 lg:p-10">
+				<h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500">{c.hoursHeading}</h2>
+				<ul class="mt-6 divide-y divide-slate-200/80">
+					{
+						c.hours.map((row) => (
+							<li class="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0">
+								<span class="font-medium text-gray-900">{row.days}</span>
+								<span class={row.time === 'Geschlossen' || row.time === 'Closed' ? 'text-slate-500' : 'text-slate-700'}>
+									{row.time}
+								</span>
+							</li>
+						))
+					}
+				</ul>
+				<p class="mt-8 rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 backdrop-blur-sm">
+					{c.appointmentNote}
+				</p>
+			</div>
+		</div>
+
+		<p class="mt-14">
+			<a
+				href={withLocalePath('/', locale)}
+				class="text-sm font-semibold text-amber-900 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-950"
+			>
+				{c.backHome}
+			</a>
+		</p>
+	</section>
+</BaseLayout>

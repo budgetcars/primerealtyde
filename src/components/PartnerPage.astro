@@ -1,0 +1,121 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import type { Locale } from '../i18n/locale';
+import { withLocalePath } from '../i18n/locale';
+import { partnerCopy } from '../i18n/copy/partner';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const c = partnerCopy[locale];
+const kontaktHref = withLocalePath('/kontakt', locale);
+const homeHref = withLocalePath('/', locale);
+---
+
+<BaseLayout locale={locale} title={String(c.title)} description={String(c.metaDescription)}>
+	<section class="relative border-b border-white/40 pb-12 pt-12 md:pb-16 md:pt-16">
+		<div
+			class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_60%_-8%,rgba(251,191,36,0.18),transparent_55%)]"
+		/>
+		<div class="relative mx-auto max-w-7xl px-4">
+			<div class="glass-panel px-8 py-10 md:px-10 md:py-12">
+				<p class="text-xs font-semibold uppercase tracking-widest text-amber-800/90">
+					{c.eyebrow}
+				</p>
+				<h1 class="mt-5 font-heading-display text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">
+					{c.title}
+				</h1>
+				<p class="mt-6 max-w-3xl text-lg leading-relaxed text-slate-600">
+					{c.leadParagraphIntro}
+					<strong class="font-semibold text-gray-900">{c.marketsLine}</strong>
+					{c.leadAfterMarketsStrong}
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="mx-auto max-w-7xl px-4 py-16 md:py-20">
+		<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+			{c.whoHeading}
+		</h2>
+		<p class="mt-3 max-w-2xl text-slate-600">
+			{c.whoLead}
+		</p>
+		<ul class="mt-10 space-y-4">
+				{
+					c.whoBullets.map((item) => (
+					<li class="glass-panel flex gap-4 p-5 md:p-6">
+						<span
+							class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-200/80 bg-amber-50/90 text-xs font-bold text-amber-900"
+							aria-hidden="true"
+						>
+							✓
+						</span>
+						<span class="text-base leading-relaxed text-slate-700">{item}</span>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<section class="border-t border-white/40 bg-white/30 py-16 md:py-20 backdrop-blur-sm">
+		<div class="mx-auto max-w-7xl px-4">
+			<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+				{c.benefitsHeading}
+			</h2>
+			<div class="mt-12 grid gap-6 md:grid-cols-3">
+				{
+					c.benefits.map((b) => (
+						<div class="glass-panel p-6 md:p-8">
+							<h3 class="text-lg font-semibold text-gray-900">{b.title}</h3>
+							<p class="mt-3 text-sm leading-relaxed text-slate-600">{b.text}</p>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<section class="mx-auto max-w-7xl px-4 py-16 md:py-20">
+		<div class="glass-panel px-8 py-10 md:px-10 md:py-12">
+			<h2 class="font-heading-display text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+				{c.nextHeading}
+			</h2>
+			<p class="mt-4 max-w-2xl text-slate-600">
+				{c.nextBody}
+			</p>
+			<p class="mt-8 flex flex-wrap items-center gap-4">
+				<a
+					href={`mailto:info@prime-realty.de?subject=${String(c.mailSubject)}`}
+					class="inline-flex rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-amber-900/15 transition hover:from-amber-500 hover:to-amber-600"
+				>
+					{c.mailCta}
+				</a>
+				<a
+					href={kontaktHref}
+					class="text-sm font-semibold text-amber-900 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-950"
+				>
+					{c.contactLink}
+				</a>
+			</p>
+			<p class="mt-8 border-t border-slate-200/80 pt-6 text-xs leading-relaxed text-slate-500">
+				{c.legalNoteIntro}{' '}
+				<a href="/nutzungsbedingungen" class="font-medium text-amber-900 hover:text-amber-950">
+					{c.legalNoteTerms}
+				</a>{' '}
+				{c.legalNoteTail}
+			</p>
+		</div>
+
+		<p class="mt-14">
+			<a
+				href={homeHref}
+				class="text-sm font-semibold text-amber-900 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-950"
+			>
+				{c.backHome}
+			</a>
+		</p>
+	</section>
+</BaseLayout>

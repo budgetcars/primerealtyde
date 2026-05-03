@@ -1,0 +1,84 @@
+---
+import type { Locale } from '../i18n/locale';
+import { ui } from '../i18n/ui';
+import { withLocalePath } from '../i18n/locale';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const L = ui[locale];
+const footerLink = 'rounded-md text-slate-600 transition hover:text-amber-900';
+
+const year = new Date().getFullYear();
+---
+
+<footer
+	class="mt-auto border-t border-white/55 bg-white/72 shadow-[0_-12px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl backdrop-saturate-150"
+>
+	<div class="mx-auto max-w-7xl px-4 py-12">
+		<div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+			<div>
+				<p class="font-heading-display text-xl font-semibold tracking-tight text-gray-900">{L.footerLead}</p>
+				<p class="mt-2 max-w-xs text-sm text-slate-600">
+					{L.footerIntro}
+				</p>
+			</div>
+			<div>
+				<p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{L.footerNav}</p>
+				<ul class="mt-4 space-y-2 text-sm">
+					<li>
+						<a href={withLocalePath('/immobilien', locale)} class={footerLink}>{L.navListings}</a>
+					</li>
+					<li>
+						<a href={withLocalePath('/ueber-uns', locale)} class={footerLink}>{L.navAbout}</a>
+					</li>
+					<li>
+						<a href={withLocalePath('/partner', locale)} class={footerLink}>{L.navPartner}</a>
+					</li>
+					<li>
+						<a href={withLocalePath('/kontakt', locale)} class={footerLink}>{L.navContact}</a>
+					</li>
+				</ul>
+			</div>
+			<div>
+				<p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{L.footerLegal}</p>
+				<ul class="mt-4 space-y-2 text-sm">
+					<li><a href="/impressum" class={footerLink}>{L.linkImprint}</a></li>
+					<li><a href="/datenschutz" class={footerLink}>{L.linkPrivacy}</a></li>
+					<li><a href="/agb" class={footerLink}>{L.linkTerms}</a></li>
+					<li><a href="/nutzungsbedingungen" class={footerLink}>{L.linkNt}</a></li>
+					<li>
+						<a href="/datenschutz#cookie-einstellungen" class={footerLink}>{L.linkCookies}</a>
+					</li>
+				</ul>
+			</div>
+			<div>
+				<p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{L.footerContact}</p>
+				<address class="mt-4 not-italic text-sm leading-relaxed text-slate-600">
+					Panoramastraße 13<br />
+					73765 Neuhausen
+					<p class="mt-3">
+						<a href="mailto:info@prime-realty.de" class="font-medium text-gray-900 hover:text-amber-900">
+							info@prime-realty.de
+						</a>
+					</p>
+					<p>
+						<a href="tel:+4971125255610" class="hover:text-amber-900">+49 (0) 711 252 55 610</a>
+					</p>
+					<p class="mt-3 text-xs leading-relaxed text-slate-500">
+						{L.footerHoursIntro}
+						<a href={withLocalePath('/kontakt', locale)} class="text-slate-600 hover:text-amber-900">{L.linkContactDetails}</a>
+					</p>
+				</address>
+				<p class="mt-4 text-sm text-slate-600">
+					{L.footerLanguages}: <span class="font-medium text-gray-900">{L.languageList}</span>
+				</p>
+			</div>
+		</div>
+		<div class="mt-10 border-t border-white/65 pt-8 text-center text-xs text-slate-500">
+			© {year} Prime Realty. {L.rightsReserved}
+		</div>
+	</div>
+</footer>

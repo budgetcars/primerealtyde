@@ -1,0 +1,321 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ListingsGrid } from './react/ListingsGrid';
+import { unsplashListingHero } from '../lib/unsplashPlaceholders';
+import type { Locale } from '../i18n/locale';
+import { home, regions, regionsEn } from '../i18n/copy/home';
+import { withLocalePath } from '../i18n/locale';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const h = home[locale];
+const regList = locale === 'en' ? [...regionsEn] : [...regions];
+const listingsHref = withLocalePath('/immobilien', locale);
+const aboutHref = withLocalePath('/ueber-uns', locale);
+const contactHref = withLocalePath('/kontakt', locale);
+
+const spotlightAssets = [
+	'je-spot-montenegro',
+	'je-spot-zypern',
+	'je-spot-nordzypern',
+	'je-spot-tuerkei',
+	'je-spot-georgien',
+	'je-spot-bali',
+	'je-spot-thailand',
+] as const;
+
+const journalHref = ['/immobilien', '/ueber-uns', '/kontakt'] as const;
+
+const spotlight = h.spotlight.map((s, i) => ({
+	...s,
+	href: listingsHref,
+	img: unsplashListingHero(spotlightAssets[i] ?? ''),
+}));
+
+const journalLinks = journalHref.map((p) => withLocalePath(p, locale));
+
+const categoryHeroImg = unsplashListingHero('je-category-real-estate');
+---
+
+<BaseLayout locale={locale} title={h.title} description={h.metaDescription}>
+	<div class="fade-in-enter">
+		<section class="relative overflow-hidden border-b border-white/50">
+			<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(251,191,36,0.18),transparent_55%)]" />
+			<div class="relative mx-auto max-w-7xl px-4 pb-10 pt-16 text-center md:pb-14 md:pt-20">
+				<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+					{h.heroEyebrow}
+				</p>
+				<h1 class="mx-auto mt-6 max-w-4xl font-heading-display text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl md:text-6xl md:leading-[1.08]">
+					{h.heroH1}
+				</h1>
+				<p class="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+					{h.heroLead}
+				</p>
+				<div class="mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-slate-500">
+					<span class="font-medium text-slate-700">{h.heroBullets[0]}</span>
+					<span class="text-slate-300" aria-hidden="true">·</span>
+					<span>{h.heroBullets[1]}</span>
+					<span class="text-slate-300" aria-hidden="true">·</span>
+					<span>{h.heroBullets[2]}</span>
+				</div>
+				<form action={listingsHref} method="get" class="mx-auto mt-10 w-full max-w-2xl">
+					<label class="sr-only" for={`hero-search-q-${locale}`}>{h.searchLabel}</label>
+					<div
+						class="flex flex-col gap-2 rounded-full border border-slate-200/90 bg-white/90 p-1.5 pl-5 shadow-lg shadow-slate-900/[0.06] backdrop-blur-md focus-within:border-amber-300/80 focus-within:ring-2 focus-within:ring-amber-200/40 sm:flex-row sm:items-center sm:gap-2 sm:pl-6"
+					>
+						<input
+							type="search"
+							name="q"
+							id={`hero-search-q-${locale}`}
+							autocomplete="off"
+							placeholder={h.searchPlaceholder}
+							class="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-left text-sm text-gray-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+						/>
+						<button
+							type="submit"
+							class="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gray-900 px-7 text-sm font-semibold text-white transition hover:bg-gray-800"
+						>
+							{h.searchSubmit}
+						</button>
+					</div>
+				</form>
+				<div class="mx-auto mt-10 flex max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
+					<a
+						href={listingsHref}
+						class="inline-flex h-12 items-center justify-center rounded-full bg-gray-900 px-8 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-gray-800"
+					>
+						{h.ctaPrimary}
+					</a>
+					<a
+						href={contactHref}
+						class="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white/80 px-8 text-sm font-semibold text-gray-900 backdrop-blur-sm transition hover:border-amber-300/80 hover:bg-white"
+					>
+						{h.ctaSecondary}
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<section class="border-b border-white/50 bg-white/40 backdrop-blur-sm">
+			<div class="mx-auto max-w-7xl px-4 py-10 md:py-12">
+				<div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+					<div>
+						<h2 class="font-heading-display text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+							{h.spotlightHeading}
+						</h2>
+						<p class="mt-1 text-sm text-slate-600">{h.spotlightLead}</p>
+					</div>
+					<a href={listingsHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">{h.spotlightAllLink}</a>
+				</div>
+				<div
+					class="je-strip mt-8 flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:gap-5 [&::-webkit-scrollbar]:hidden"
+				>
+					{
+						spotlight.map((s) => (
+							<a
+								href={s.href}
+								class="je-card group relative w-[min(78vw,260px)] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/70 bg-white/60 shadow-md shadow-slate-900/[0.06] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-amber-200/90 hover:shadow-lg md:w-[240px]"
+							>
+								<div class="relative aspect-[4/5] overflow-hidden bg-slate-100">
+									<img
+										src={s.img}
+										alt=""
+										class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+										loading="lazy"
+										width="520"
+										height="650"
+									/>
+									<div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16">
+										<p class="text-[11px] font-medium uppercase tracking-wide text-white/90">{s.location}</p>
+										<p class="mt-0.5 font-heading-display text-lg font-semibold leading-tight text-white">{s.title}</p>
+										<p class="mt-2 text-sm font-semibold text-amber-100">{s.price}</p>
+									</div>
+								</div>
+							</a>
+						))
+					}
+				</div>
+			</div>
+		</section>
+
+		<section class="py-10 md:py-14">
+			<div class="mx-auto max-w-7xl px-4">
+				<a
+					href={listingsHref}
+					class="group relative flex min-h-[min(52vh,380px)] overflow-hidden rounded-[1.75rem] border border-white/60 shadow-xl shadow-slate-900/10"
+				>
+					<img
+						src={categoryHeroImg}
+						alt=""
+						class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+						width="1600"
+						height="900"
+						loading="lazy"
+					/>
+					<div class="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10 md:via-black/35" />
+					<div class="relative flex w-full flex-col justify-end p-8 md:max-w-xl md:p-12 md:pb-14">
+						<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">{h.categoryLabel}</p>
+						<h2 class="mt-3 font-heading-display text-4xl font-semibold tracking-tight text-white md:text-5xl">
+							{h.categoryH2}
+						</h2>
+						<p class="mt-4 text-base leading-relaxed text-white/90">
+							{h.categoryLead}
+						</p>
+						<span
+							class="mt-8 inline-flex w-fit items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-gray-900 transition group-hover:bg-amber-50"
+						>
+							{h.categoryCta}
+						</span>
+					</div>
+				</a>
+			</div>
+		</section>
+
+		<section class="border-y border-white/45 bg-white/50 py-14 backdrop-blur-md md:py-20">
+			<div class="mx-auto max-w-7xl px-4">
+				<div class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+					<div>
+						<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+							{h.focusHeading}
+						</h2>
+						<p class="mt-2 max-w-xl text-slate-600">{h.focusLead}</p>
+					</div>
+					<a
+						href={listingsHref}
+						class="text-sm font-semibold text-amber-900 underline decoration-amber-400/80 decoration-2 underline-offset-4 hover:text-amber-950"
+					>
+						{h.focusAll}
+					</a>
+				</div>
+				<ListingsGrid
+					client:only="react"
+					limit={6}
+					locale={locale}
+					listingsListPath={listingsHref}
+					listingDetailBasePath={withLocalePath('/immobilie', locale)}
+				/>
+			</div>
+		</section>
+
+		<section class="py-14 md:py-20">
+			<div class="mx-auto max-w-7xl px-4">
+				<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+					{h.journalHeading}
+				</h2>
+				<p class="mt-2 max-w-xl text-slate-600">{h.journalLead}</p>
+				<div class="mt-10 grid gap-8 md:grid-cols-3">
+					{
+						h.journal.map((j, i) => (
+							<a
+								href={journalLinks[i]}
+								class="group flex flex-col rounded-2xl border border-slate-200/80 bg-white/85 p-7 shadow-[0_8px_32px_rgba(15,23,42,0.05)] transition hover:border-amber-200/90 hover:shadow-lg md:p-8"
+							>
+								<p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{j.date}</p>
+								<h3 class="mt-4 font-heading-display text-xl font-semibold text-gray-900 group-hover:text-amber-950">{j.title}</h3>
+								<p class="mt-3 flex-1 text-sm leading-relaxed text-slate-600">{j.excerpt}</p>
+								<span class="mt-6 text-sm font-semibold text-amber-900">{h.journalReadMore}</span>
+							</a>
+						))
+					}
+				</div>
+			</div>
+		</section>
+
+		<section class="border-t border-white/50 bg-white/35 py-14 backdrop-blur-sm md:py-16">
+			<div class="mx-auto max-w-7xl px-4">
+				<h2 class="text-center font-heading-display text-2xl font-semibold text-gray-900 md:text-3xl">
+					{h.pillarsHeading}
+				</h2>
+				<div class="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3 md:gap-8">
+					{
+						h.pillars.map((p) => (
+							<div class="rounded-2xl border border-slate-200/70 bg-white/90 p-6 text-center md:p-7">
+								<h3 class="font-heading-display text-lg font-semibold text-gray-900">{p.title}</h3>
+								<p class="mt-3 text-sm leading-relaxed text-slate-600">{p.text}</p>
+							</div>
+						))
+					}
+				</div>
+			</div>
+		</section>
+
+		<section class="pb-16 pt-4 md:pb-24">
+			<div class="mx-auto max-w-7xl px-4">
+				<h2 class="font-heading-display text-2xl font-semibold tracking-tight text-gray-900 md:text-3xl">
+					{h.regionsHeading}
+				</h2>
+				<p class="mt-2 text-sm text-slate-600">
+					{h.regionsLead}
+				</p>
+				<div class="mt-8 flex flex-wrap gap-2 md:gap-3">
+					{
+						regList.map((r) => (
+							<a
+								href={listingsHref}
+								class="rounded-full border border-slate-200/90 bg-white/90 px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:border-amber-300/80 hover:bg-amber-50/90"
+							>
+								{r}
+							</a>
+						))
+					}
+				</div>
+				<p class="mt-10">
+					<a
+						href={listingsHref}
+						class="text-sm font-semibold text-amber-900 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-950"
+					>
+						{h.regionsAll}
+					</a>
+				</p>
+			</div>
+		</section>
+
+		<section class="relative border-t border-white/55 pb-20 pt-12">
+			<div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-100/80 via-transparent to-amber-50/40" aria-hidden="true" />
+			<div class="relative mx-auto max-w-3xl px-4 text-center">
+				<h2 class="font-heading-display text-2xl font-semibold text-gray-900 md:text-3xl">{h.stayHeading}</h2>
+				<p class="mx-auto mt-3 max-w-lg text-sm text-slate-600">{h.stayLead}</p>
+				<div class="mt-8 flex flex-wrap justify-center gap-3">
+					<a
+						href={contactHref}
+						class="inline-flex rounded-full bg-gray-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+					>
+						{h.stayContact}
+					</a>
+					<a
+						href={aboutHref}
+						class="inline-flex rounded-full border border-slate-200 bg-white px-8 py-3 text-sm font-semibold text-gray-900 transition hover:border-amber-300"
+					>
+						{h.stayAbout}
+					</a>
+				</div>
+			</div>
+		</section>
+	</div>
+</BaseLayout>
+
+<style>
+	@keyframes homeFadeUp {
+		from {
+			opacity: 0;
+			transform: translateY(14px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.fade-in-enter {
+		animation: homeFadeUp 0.65s cubic-bezier(0.4, 0, 0.2, 1) both;
+	}
+	.je-strip {
+		scroll-snap-type: x mandatory;
+		scroll-padding-inline: 0;
+	}
+	.je-card {
+		scroll-snap-align: start;
+	}
+</style>

@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import type { Locale } from '../i18n/locale';
+import { aboutCopy } from '../i18n/copy/about';
+import { withLocalePath } from '../i18n/locale';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const c = aboutCopy[locale];
+const listingsHref = withLocalePath('/immobilien', locale);
+---
+
+<BaseLayout locale={locale} title={String(c.title)} description={String(c.metaDescription)}>
+	<section class="relative border-b border-white/40 py-14 md:pb-20 md:pt-16">
+		<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_70%_-5%,rgba(251,191,36,0.18),transparent_55%)]" />
+		<div class="relative mx-auto max-w-7xl px-4">
+			<div class="glass-panel px-8 py-10 md:px-12 md:py-12">
+				<p class="text-xs font-semibold uppercase tracking-widest text-amber-800/90">
+					{c.eyebrow}
+				</p>
+				<h1 class="mt-5 font-heading-display text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">
+					{c.title}
+				</h1>
+				<p class="mt-6 max-w-3xl text-lg leading-relaxed text-slate-600">
+					{c.introBodyBefore}
+					<strong class="font-semibold text-gray-900">{c.marketsLine}</strong>
+					{c.introStrongAfter}
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="mx-auto max-w-7xl px-4 py-16 md:py-20">
+		<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+			{c.serviceHeading}
+		</h2>
+		<p class="mt-2 max-w-2xl text-slate-600">
+			{c.serviceLead}
+		</p>
+		<div class="mt-12 grid gap-6 sm:grid-cols-2">
+			{
+				c.service.map((item: { letter: string; title: string; text: string }) => (
+					<div class="glass-panel p-6 md:p-8">
+						<div class="flex items-start gap-4">
+							<span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-200/80 bg-amber-50/90 text-lg font-bold text-amber-900 shadow-sm backdrop-blur-sm">
+								{item.letter}
+							</span>
+							<div>
+								<h3 class="text-lg font-semibold text-gray-900">{item.title}</h3>
+								<p class="mt-2 text-sm leading-relaxed text-slate-600">{item.text}</p>
+							</div>
+						</div>
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	<section class="border-y border-white/40 bg-white/35 py-16 backdrop-blur-md md:py-20">
+		<div class="mx-auto max-w-7xl px-4">
+			<h2 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+				{c.reasonsHeading}
+			</h2>
+			<ul class="mt-10 grid gap-4 sm:grid-cols-2">
+				{
+					c.reasonsList.map((line: string) => (
+						<li class="glass-panel-soft flex gap-3 px-5 py-4 text-slate-700 shadow-sm shadow-slate-900/5">
+							<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" aria-hidden="true" />
+							<span class="leading-relaxed">{line}</span>
+						</li>
+					))
+				}
+			</ul>
+			<p class="mt-12">
+				<a
+					href={listingsHref}
+					class="inline-flex items-center rounded-2xl border border-amber-200/80 bg-amber-100/80 px-6 py-3 text-sm font-semibold text-amber-950 shadow-sm backdrop-blur-sm transition hover:bg-amber-50"
+				>
+					{c.ctaListings}
+				</a>
+			</p>
+		</div>
+	</section>
+</BaseLayout>

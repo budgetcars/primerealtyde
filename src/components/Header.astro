@@ -1,0 +1,100 @@
+---
+import type { Locale } from '../i18n/locale';
+import { ui } from '../i18n/ui';
+import { switchLocaleHref, withLocalePath } from '../i18n/locale';
+
+interface Props {
+	locale: Locale;
+	pathname: string;
+	search?: string;
+}
+
+const { locale, pathname } = Astro.props;
+const search = Astro.props.search ?? '';
+const L = ui[locale];
+
+const navItems = [
+	{ href: withLocalePath('/', locale), label: L.navHome },
+	{ href: withLocalePath('/ueber-uns', locale), label: L.navAbout },
+	{ href: withLocalePath('/immobilien', locale), label: L.navListings },
+	{ href: withLocalePath('/partner', locale), label: L.navPartner },
+	{ href: withLocalePath('/kontakt', locale), label: L.navContact },
+];
+
+const toggleHrefDe = switchLocaleHref(pathname, search, 'de');
+const toggleHrefEn = switchLocaleHref(pathname, search, 'en');
+---
+
+<header
+	class="sticky top-0 z-50 border-b border-white/60 bg-white/75 shadow-sm shadow-slate-900/[0.04] backdrop-blur-2xl backdrop-saturate-150"
+>
+	<div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 md:py-4">
+		<a href={withLocalePath('/', locale)} class="group flex min-w-0 flex-col leading-tight">
+			<span
+				class="font-heading-display text-xl font-semibold tracking-tight text-gray-900 transition group-hover:text-amber-900 md:text-[1.35rem]"
+			>
+				Prime Realty
+			</span>
+			<span class="truncate text-xs font-medium text-slate-600">{L.tagline}</span>
+		</a>
+		<div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+			<div class="flex items-center gap-0.5 rounded-xl border border-slate-200/80 bg-white/60 px-1 py-0.5 text-xs backdrop-blur-sm" role="group" aria-label={L.langAria}>
+				<a
+					href={toggleHrefDe}
+					class:list={[
+						'rounded-lg px-2 py-1 font-semibold transition',
+						locale === 'de'
+							? 'bg-gray-900 text-white'
+							: 'text-slate-600 hover:bg-slate-100 hover:text-gray-900',
+					]}
+					hreflang="de"
+				>
+					DE
+				</a>
+				<a
+					href={toggleHrefEn}
+					class:list={[
+						'rounded-lg px-2 py-1 font-semibold transition',
+						locale === 'en'
+							? 'bg-gray-900 text-white'
+							: 'text-slate-600 hover:bg-slate-100 hover:text-gray-900',
+					]}
+					hreflang="en"
+				>
+					EN
+				</a>
+			</div>
+			<nav class="hidden flex-wrap items-center justify-end gap-0.5 sm:flex lg:gap-1">
+				{
+					navItems.map((item) => (
+						<a
+							href={item.href}
+							class="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-amber-100/80 hover:text-amber-950"
+						>
+							{item.label}
+						</a>
+					))
+				}
+			</nav>
+			<a
+				href="/verwaltung"
+				class="shrink-0 rounded-xl border border-amber-300/90 bg-gradient-to-br from-white/95 to-amber-50/90 px-3.5 py-2 text-sm font-semibold text-amber-950 shadow-sm backdrop-blur-sm transition hover:border-amber-400 hover:from-white hover:to-amber-100/95"
+				aria-label={L.navAdminAria}
+			>
+				{L.navAdmin}
+			</a>
+		</div>
+	</div>
+	<!-- Mobile navigation row -->
+	<nav class="border-t border-slate-200/70 bg-white/60 px-2 py-2 sm:hidden">
+		<div class="flex max-w-7xl flex-wrap justify-center gap-0.5">
+			{
+				navItems.map((item) => (
+					<a href={item.href} class="rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-amber-100/70">
+						{item.label}
+					</a>
+				))
+			}
+		</div>
+	</nav>
+</header>

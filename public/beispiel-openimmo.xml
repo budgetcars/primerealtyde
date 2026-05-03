@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openimmo>
+  <uebertragung art="ONLINE" umfang="TEIL" modus="NEW" version="1.2.7" sendersoftware="Prime Realty Demo" />
+  <anbieter>
+    <immobilie>
+      <objektart>
+        <wohnung wohnungtyp="ETAGE"/>
+      </objektart>
+      <geo>
+        <plz>70173</plz>
+        <ort>Stuttgart</ort>
+        <strasse>Musterstraße</strasse>
+        <hausnummer>12</hausnummer>
+      </geo>
+      <preise>
+        <kaufpreis>485000</kaufpreis>
+      </preise>
+      <flaechen>
+        <wohnflaeche>72</wohnflaeche>
+        <anzahl_zimmer>3</anzahl_zimmer>
+      </flaechen>
+      <freitexte>
+        <objekttitel>Helle Ferienwohnung – zentral in Stuttgart</objekttitel>
+        <objektbeschreibung>Ruhige Lage, ideal für Wochenendaufenthalte. Balkon, Fußbodenheizung, Einbauküche.</objektbeschreibung>
+      </freitexte>
+      <verwaltung_techn>
+        <objektnr_intern>DEMO-001</objektnr_intern>
+      </verwaltung_techn>
+    </immobilie>
+  </anbieter>
+</openimmo>

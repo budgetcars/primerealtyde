@@ -1,0 +1,90 @@
+---
+import '../styles/global.css';
+import type { Locale } from '../i18n/locale';
+import { getLocale, pathHasLocaleMirror, stripLocalePrefix, withLocalePath } from '../i18n/locale';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+	locale?: Locale;
+}
+
+const pathname = Astro.url.pathname;
+const search = Astro.url.search;
+const locale: Locale = Astro.props.locale ?? getLocale(pathname);
+
+const defaultMeta: Record<Locale, string> = {
+	de:
+		'Prime Realty – Premium-Immobilien mit internationalem Zugriff in Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand. Transparente Daten und strukturierte Beratung.',
+	en:
+		'Prime Realty – premium real estate in Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand. Clear information and structured guidance.',
+};
+
+const { title } = Astro.props;
+const description = Astro.props.description ?? defaultMeta[locale];
+const fullTitle = title.includes('Prime Realty') ? title : `${title} · Prime Realty`;
+const stripped = stripLocalePrefix(pathname);
+const canonicalURL =
+	Astro.site != null
+		? new URL(Astro.url.pathname + search, Astro.site)
+		: new URL(Astro.url.href);
+
+const alternateDe =
+	pathHasLocaleMirror(stripped) && Astro.site != null
+		? new URL(`${withLocalePath(stripped, 'de')}${search}`, Astro.site).href
+		: null;
+const alternateEn =
+	pathHasLocaleMirror(stripped) && Astro.site != null
+		? new URL(`${withLocalePath(stripped, 'en')}${search}`, Astro.site).href
+		: null;
+
+const ogLocale = locale === 'en' ? 'en_GB' : 'de_DE';
+const htmlLang = locale === 'en' ? 'en' : 'de';
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#f8fafc" />
+		<link rel="canonical" href={canonicalURL.href} />
+		{
+			alternateDe && alternateEn ? (
+				<>
+					<link rel="alternate" hreflang="de" href={alternateDe} />
+					<link rel="alternate" hreflang="en" href={alternateEn} />
+					<link rel="alternate" hreflang="x-default" href={alternateDe} />
+				</>
+			) : null
+		}
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Prime Realty" />
+		<meta property="og:locale" content={ogLocale} />
+		<meta property="og:title" content={fullTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalURL.href} />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content={fullTitle} />
+		<meta name="twitter:description" content={description} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap"
+			rel="stylesheet"
+		/>
+		<title>{fullTitle}</title>
+	</head>
+	<body class="flex min-h-screen flex-col">
+		<Header locale={locale} pathname={pathname} search={search} />
+		<main class="flex-1">
+			<slot />
+		</main>
+		<Footer locale={locale} />
+	</body>
+</html>
