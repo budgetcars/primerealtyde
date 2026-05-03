@@ -29,7 +29,7 @@ export const partnerCopy = {
 			},
 			{
 				title: 'Begleitung bis zum Abschluss',
-				text: 'Transparente Kommunikation und Abstimmung zwischen allen Beteiligten – von der ersten Präsentation bis zur Vertragsreife.',
+				text: 'Klare Kommunikation und Abstimmung zwischen allen Beteiligten – von der ersten Präsentation bis zur Vertragsreife.',
 			},
 		],
 		benefitsHeading: 'Was Sie von uns erwarten können',
@@ -71,7 +71,7 @@ export const partnerCopy = {
 			},
 			{
 				title: 'Hands-on closure',
-				text: 'Transparent communication between every party – from onboarding through contract readiness.',
+				text: 'Clear communication between every party – from onboarding through contract readiness.',
 			},
 		],
 		benefitsHeading: 'What you can expect from us',

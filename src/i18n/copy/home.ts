@@ -42,11 +42,11 @@ export const home: Record<Locale, HomeCopy> = {
 	de: {
 		title: 'Prime Realty · Premium Immobilien',
 		metaDescription:
-			'Premium-Immobilien mit internationalem Zugriff – Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand. Transparente Daten und persönliche Beratung.',
+			'Premium-Immobilien in Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
 		heroEyebrow: 'Prime Realty · Mittelmeer · Schwarzes Meer · Südostasien',
 		heroH1: 'Premium-Immobilien mit internationalem Zugriff',
 		heroLead:
-			'Transparente Daten, strukturierte Beratung und Zugang zu ausgewählten Objekten – Schwerpunkt Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
+			'Schwerpunktmärkte: Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand – vom ersten Gespräch bis zur Abwicklung.',
 		heroBullets: ['Ausgewählte Objekte', 'Persönliche Beratung', 'Mehrsprachiges Team'] as const,
 		searchLabel: 'Immobilien suchen',
 		searchPlaceholder: 'Ort, Stichwort oder Objekttyp …',
@@ -106,7 +106,7 @@ export const home: Record<Locale, HomeCopy> = {
 			},
 			{
 				title: 'Prozess & Abschluss',
-				text: 'Strukturierte Abwicklung und Transparenz bis zum erfolgreichen Abschluss.',
+				text: 'Begleitung von der ersten Auswahl bis zum erfolgreichen Abschluss.',
 			},
 		],
 		regionsHeading: 'Beliebte Regionen',
@@ -120,11 +120,11 @@ export const home: Record<Locale, HomeCopy> = {
 	en: {
 		title: 'Prime Realty · Premium real estate',
 		metaDescription:
-			'Premium real estate with international reach – Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand. Clear information and personal advice.',
+			'Premium real estate in Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
 		heroEyebrow: 'Prime Realty · Mediterranean · Black Sea · Southeast Asia',
 		heroH1: 'Premium real estate with international reach',
 		heroLead:
-			'Clear information, structured advisory and access to selected properties – focusing on Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
+			'Focus regions: Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand – from first contact through closing.',
 		heroBullets: ['Curated inventory', 'Personal advice', 'Multilingual team'] as const,
 		searchLabel: 'Search listings',
 		searchPlaceholder: 'Location, keyword or property type …',
@@ -184,7 +184,7 @@ export const home: Record<Locale, HomeCopy> = {
 			},
 			{
 				title: 'Structure & closing',
-				text: 'Clear deal flow and transparency through completion.',
+				text: 'Support from early shortlisting through closing.',
 			},
 		],
 		regionsHeading: 'Popular regions',

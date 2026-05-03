@@ -16,7 +16,7 @@ export const ui = {
 
 		footerLead: 'Prime Realty',
 		footerIntro:
-			'Premium-Immobilien mit internationalem Zugriff – Schwerpunkt Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
+			'Premium-Immobilien mit internationalem Zugriff und persönlicher Beratung für ausgewählte Destinationen.',
 		footerNav: 'Navigation',
 		footerLegal: 'Rechtliches',
 		linkImprint: 'Impressum',
@@ -47,7 +47,7 @@ export const ui = {
 
 		footerLead: 'Prime Realty',
 		footerIntro:
-			'Premium real estate with cross-border reach – focus on Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
+			'Premium real estate with international reach and personal advisory across selected destinations.',
 		footerNav: 'Navigation',
 		footerLegal: 'Legal',
 		linkImprint: 'Imprint (DE)',

@@ -38,7 +38,7 @@ export const aboutCopy = {
 		reasonsList: [
 			'Exklusiver Zugang zu Premium-Immobilien',
 			'Lokale Expertise in internationalen Märkten',
-			'Vollständige Transparenz und Kommunikation',
+			'Offene Kommunikation und verlässliche Informationen',
 			'Langfristige Betreuung nach dem Kauf',
 		],
 		ctaListings: 'Zu unseren Immobilien',
@@ -80,7 +80,7 @@ export const aboutCopy = {
 		reasonsList: [
 			'Access to curated premium properties',
 			'On-the-ground expertise across regions',
-			'Transparent collaboration',
+			'Straightforward collaboration',
 			'Long-term stewardship after closing',
 		],
 		ctaListings: 'Browse listings',
