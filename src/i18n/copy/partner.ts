@@ -4,8 +4,9 @@ export const partnerCopy = {
 	de: {
 		title: 'Partner werden',
 		metaDescription:
-			'Zusammenarbeit mit Prime Realty für Entwickler, Eigentümer und Makler – Immobilien in Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
+			'Wir suchen Partner weltweit – gemeinsame Zusammenarbeit für Entwickler, Eigentümer und Makler. Schwerpunkt u. a. Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
 		eyebrow: 'Kooperation mit Prime Realty',
+		leadHighlight: 'Wir suchen Partner weltweit!!!',
 		leadParagraphIntro: 'Sie haben attraktive Objekte oder Projekte in ',
 		marketsLine:
 			'Montenegro, Zypern, Nordzypern, der Türkei, Georgien, auf Bali oder in Thailand',
@@ -47,8 +48,9 @@ export const partnerCopy = {
 	en: {
 		title: 'Become a partner',
 		metaDescription:
-			'Work with Prime Realty as a developer, owner or brokerage – listings in Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
+			'We are seeking partners worldwide — developers, owners and brokerages welcome. Strong focus on Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
 		eyebrow: 'Partnership with Prime Realty',
+		leadHighlight: 'We are seeking partners worldwide.',
 		leadParagraphIntro: 'Do you represent attractive listings or developments in ',
 		marketsLine: 'Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali or Thailand',
 		leadAfterMarketsStrong:

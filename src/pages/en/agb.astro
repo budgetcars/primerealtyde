@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withLocalePath } from '../../i18n/locale';
+
+const homeHref = withLocalePath('/', 'en');
+const privacyHref = withLocalePath('/datenschutz', 'en');
+---
+
+<BaseLayout
+	locale="en"
+	title="General terms (brokerage)"
+	description="General terms for brokerage and advisory services Prime Realty — courtesy English overview; German originals govern where statutory."
+>
+	<div class="mx-auto max-w-3xl px-4 py-12 md:py-16">
+		<article class="glass-panel px-8 py-10 md:px-10 md:py-14">
+			<h1 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+				General terms (brokerage)
+			</h1>
+			<p class="mt-3 text-sm text-slate-600">Version: December 2025</p>
+			<p class="mt-6 text-sm leading-relaxed text-slate-700">
+				These terms govern brokerage and advisory relationships between Prime Realty and its clients concerning real
+				property. Mandatory consumer laws in Germany remain unaffected.
+			</p>
+
+			<div class="mt-14 space-y-12 text-sm leading-relaxed text-slate-700">
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 1 Scope</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> These terms apply to contracts on brokerage/advisory relating to
+						property between Prime Realty (“broker”) and the client.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> Diverging general terms of the client apply only if expressly
+						accepted in writing.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 2 Scope of performance</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> We identify suitable properties / transactions and advise as agreed.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> We may, but must not where not agreed, provide comprehensive
+						due‑diligence beyond contractually stipulated scope.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> No guarantee that a transaction will conclude successfully.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 3 Commission</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> A commission entitlement arises when a purchase/reservation agreement
+						mediated through us legally takes effect—subject to the individual engagement clause.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> Rates are agreed individually and memorialised.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> Fees are payable as agreed upon contract maturity, generally on
+						purchase-price basis unless otherwise fixed.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(4)</strong> Statutory VAT applies additionally where applicable.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 4 Client duties</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> Inform us promptly of facts material to brokerage.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> Treat information disclosed by us confidentially unless lawfully
+						shareable with counter-parties/advisers involved in intended transaction.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> Notify us immediately of contract negotiations/signing arising
+						from our introductions.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 5 Liability</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> Unlimited liability per mandatory law including intent/gross negligence and injury.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> For slight negligence we are liable only for breach of cardinal
+						obligations (loss typical and foreseeable unless otherwise mandatory).
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> Further liability excluded per applicable German standards.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 6 Duration and termination</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> Engagements typically run indefinitely unless expressly fixed duration.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> Ordinary termination observing 14‑day notice unless contract provides otherwise.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> Termination for good cause remains unaffected.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 7 Data protection</h2>
+					<p class="mt-4">
+						Data processing complies with GDPR; details in our{' '}
+						<a href={privacyHref} class="text-accent hover:text-accent-muted">privacy policy</a>.
+					</p>
+				</section>
+
+				<section>
+					<h2 class="text-xl font-bold text-gray-900">§ 8 Final provisions</h2>
+					<p class="mt-4">
+						<strong class="text-gray-900">(1)</strong> German law excluding UN CISG sales convention.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(2)</strong> Place of performance/jurisdiction pursuant to statute and permissible agreement.
+					</p>
+					<p class="mt-4">
+						<strong class="text-gray-900">(3)</strong> Severability clause.
+					</p>
+				</section>
+			</div>
+
+			<p class="mt-14">
+				<a href={homeHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">← Back to home</a>
+			</p>
+		</article>
+	</div>
+</BaseLayout>

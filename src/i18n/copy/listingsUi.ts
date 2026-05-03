@@ -7,6 +7,7 @@ export const listingsUi = {
 		noListingsInquiry: 'Anfrage',
 		pageTitle: 'Immobilien',
 		noHits: 'Keine Treffer für',
+		noHitsFilters: 'Mit diesen Filtern haben wir keine Objekte.',
 		resetFilter: 'Filter zurücksetzen',
 		imgAltFallback: 'Platzhaltermotiv',
 		searchLabel: 'Immobilien suchen',
@@ -14,7 +15,7 @@ export const listingsUi = {
 		search: 'Suchen',
 		allListings: 'Alle',
 		pageLead:
-			'Hier finden Sie unsere aktuellen Exposés. Nutzen Sie die Suche nach Ort oder Stichwort – wir beraten Sie gern zu jedem Objekt persönlich.',
+			'Karte und Liste: Land, Typ, maximales Budget und optional Stichwort – passende Objekte erscheinen auf der Karte und darunter.',
 		pageMetaDescription:
 			'Aktuelle Immobilien-Angebote von Prime Realty – Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
 		location: 'Ort',
@@ -31,6 +32,10 @@ export const listingsUi = {
 		notSelectedLead: 'Kein Objekt ausgewählt.',
 		notFoundLead: 'Dieses Objekt wurde nicht gefunden.',
 		backToOverview: 'Zur Übersicht',
+		mapNoCoordsHint:
+			'Ohne gespeicherte Koordinaten erscheinen Objekte nur in der Liste – die Karte zeigt den Überblicksbereich.',
+		listSectionTitle: 'Liste',
+		listSectionLead: 'Alle Treffer mit Fotos und Details.',
 	},
 	en: {
 		priceOnRequest: 'Price on request',
@@ -38,6 +43,7 @@ export const listingsUi = {
 		noListingsInquiry: 'Get in touch',
 		pageTitle: 'Listings',
 		noHits: 'No results for',
+		noHitsFilters: 'Nothing matches those filters.',
 		resetFilter: 'Clear search',
 		imgAltFallback: 'Placeholder image',
 		searchLabel: 'Search listings',
@@ -45,7 +51,7 @@ export const listingsUi = {
 		search: 'Search',
 		allListings: 'All',
 		pageLead:
-			'Browse our latest listings. Search by location or keyword – we will happily advise you personally on each property.',
+			'Map and grid: country, property type, max budget and optional keyword — matches appear on the map and below.',
 		pageMetaDescription:
 			'Prime Realty listings – Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
 		location: 'Location',
@@ -62,5 +68,9 @@ export const listingsUi = {
 		notSelectedLead: 'No listing selected.',
 		notFoundLead: 'This listing could not be found.',
 		backToOverview: 'Back to overview',
+		mapNoCoordsHint:
+			'Listings without stored coordinates only appear below; the map shows a regional overview.',
+		listSectionTitle: 'List',
+		listSectionLead: 'All matches with photos and details.',
 	},
 } satisfies Record<Locale, Record<string, string>>;

@@ -1,7 +1,19 @@
 export type Locale = 'de' | 'en';
 
-/** Routes that exist in DE (root) and EN (/en/…); legal & admin excluded. */
-const mirroredCanonical = new Set(['/', '/immobilien', '/immobilie', '/kontakt', '/ueber-uns', '/partner']);
+/** Routes that exist under DE root and under `/en/` (same path suffix). */
+const mirroredCanonical = new Set([
+	'/',
+	'/immobilien',
+	'/immobilie',
+	'/kontakt',
+	'/ueber-uns',
+	'/partner',
+	'/impressum',
+	'/datenschutz',
+	'/agb',
+	'/nutzungsbedingungen',
+	'/verwaltung',
+]);
 
 export function getLocale(pathname: string): Locale {
 	return pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'de';

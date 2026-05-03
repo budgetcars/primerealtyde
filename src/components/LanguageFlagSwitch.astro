@@ -1,0 +1,55 @@
+---
+import type { Locale } from '../i18n/locale';
+import { switchLocaleHref } from '../i18n/locale';
+import { ui } from '../i18n/ui';
+
+interface Props {
+	locale: Locale;
+	pathname: string;
+	search?: string;
+}
+
+const { locale, pathname } = Astro.props;
+const search = Astro.props.search ?? '';
+const L = ui[locale];
+
+const hrefDe = switchLocaleHref(pathname, search, 'de');
+const hrefEn = switchLocaleHref(pathname, search, 'en');
+---
+
+<div
+	class="pointer-events-none fixed bottom-5 left-5 z-[10000] pl-[env(safe-area-inset-left,12px)] pb-[env(safe-area-inset-bottom,12px)]"
+	aria-label={L.langAria}
+>
+	<div
+		class="pointer-events-auto flex gap-1 rounded-2xl border border-slate-200/90 bg-white/90 p-1 shadow-[0_8px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+		role="group"
+	>
+		<a
+			href={hrefDe}
+			hreflang="de"
+			title={L.langDe}
+			aria-label={L.langDe}
+			aria-current={locale === 'de' ? 'true' : undefined}
+			class:list={[
+				'flex h-11 w-11 items-center justify-center rounded-xl text-[1.65rem] leading-none transition hover:bg-slate-100',
+				locale === 'de' ? 'bg-amber-100/95 ring-2 ring-amber-400/90 ring-offset-2 ring-offset-white' : '',
+			]}
+		>
+			<span aria-hidden="true">🇩🇪</span>
+		</a>
+		<a
+			href={hrefEn}
+			hreflang="en"
+			title={L.langEn}
+			aria-label={L.langEn}
+			aria-current={locale === 'en' ? 'true' : undefined}
+			class:list={[
+				'flex h-11 w-11 items-center justify-center rounded-xl text-[1.65rem] leading-none transition hover:bg-slate-100',
+				locale === 'en' ? 'bg-amber-100/95 ring-2 ring-amber-400/90 ring-offset-2 ring-offset-white' : '',
+			]}
+		>
+			<span aria-hidden="true">🇬🇧</span>
+		</a>
+	</div>
+</div>

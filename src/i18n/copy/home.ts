@@ -10,6 +10,7 @@ type HomeCopy = {
 	searchLabel: string;
 	searchPlaceholder: string;
 	searchSubmit: string;
+	heroSearchFootnote: string;
 	ctaPrimary: string;
 	ctaSecondary: string;
 	spotlightHeading: string;
@@ -51,6 +52,7 @@ export const home: Record<Locale, HomeCopy> = {
 		searchLabel: 'Immobilien suchen',
 		searchPlaceholder: 'Ort, Stichwort oder Objekttyp …',
 		searchSubmit: 'Suchen',
+		heroSearchFootnote: 'Optionales Stichwort oben dazu – dann Treffer gleich auf Karte und Liste.',
 		ctaPrimary: 'Immobilien durchsuchen',
 		ctaSecondary: 'Anfrage senden',
 		spotlightHeading: 'Im Rampenlicht',
@@ -129,6 +131,7 @@ export const home: Record<Locale, HomeCopy> = {
 		searchLabel: 'Search listings',
 		searchPlaceholder: 'Location, keyword or property type …',
 		searchSubmit: 'Search',
+		heroSearchFootnote: 'Optional keyword above — matching homes show on the map and in the list.',
 		ctaPrimary: 'Browse listings',
 		ctaSecondary: 'Send an inquiry',
 		spotlightHeading: 'Spotlight',

@@ -2,71 +2,127 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import type { Locale } from '../i18n/locale';
 import { listingsUi } from '../i18n/copy/listingsUi';
-import { ListingsGrid } from './react/ListingsGrid';
+import { listingSearchFiltersUi } from '../i18n/copy/listingSearchFilters';
+import { ListingsBrowse } from './react/ListingsBrowse';
 import { withLocalePath } from '../i18n/locale';
-
 interface Props {
 	locale: Locale;
 }
 
 const { locale } = Astro.props;
-const u = listingsUi[locale];
-const searchQ = Astro.url.searchParams.get('q') ?? '';
+const L = listingsUi[locale];
+const filt = listingSearchFiltersUi[locale];
 const listingsPath = withLocalePath('/immobilien', locale);
 const detailPath = withLocalePath('/immobilie', locale);
 ---
 
-<BaseLayout locale={locale} title={u.pageTitle} description={u.pageMetaDescription}>
+<BaseLayout locale={locale} title={L.pageTitle} description={L.pageMetaDescription}>
 	<div class="mx-auto max-w-7xl px-4 py-12 md:py-16">
 		<div class="glass-panel px-6 py-8 md:px-10 md:py-10">
 			<h1 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
-				{u.pageTitle}
+				{L.pageTitle}
 			</h1>
 			<p class="mt-3 max-w-2xl text-slate-600">
-				{u.pageLead}
+				{L.pageLead}
 			</p>
-			<form action={listingsPath} method="get" class="mt-8 w-full max-w-2xl">
-				<label class="sr-only" for={`browse-q-${locale}`}>{u.searchLabel}</label>
-				<div
-					class="flex flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white/80 p-2 shadow-md shadow-slate-900/[0.04] backdrop-blur-md sm:flex-row sm:items-center sm:gap-0 sm:p-2"
-				>
+
+			<form id="listing-browse-search" action={listingsPath} method="get" class="mt-8 w-full max-w-4xl space-y-4">
+				<div>
+					<label class="sr-only" for={`browse-q-${locale}`}>{filt.keywordLegend}</label>
 					<input
 						type="search"
 						name="q"
 						id={`browse-q-${locale}`}
-						value={searchQ}
+						value=""
 						autocomplete="off"
-						placeholder={u.placeholderSearch}
-						class="min-h-11 min-w-0 flex-1 rounded-xl border border-transparent bg-transparent px-4 py-2 text-sm text-gray-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-0 sm:rounded-full"
+						placeholder={L.placeholderSearch}
+						class="min-h-11 w-full rounded-xl border border-slate-200/90 bg-white/90 px-4 py-2.5 text-sm text-gray-900 shadow-sm backdrop-blur-sm placeholder:text-slate-400 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
 					/>
-					<div class="flex shrink-0 gap-2 px-1 pb-1 sm:p-0">
-						<button
-							type="submit"
-							class="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-gray-900 px-6 text-sm font-semibold text-white transition hover:bg-gray-800 sm:flex-none sm:rounded-full"
+				</div>
+				<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+					<div class="flex flex-col gap-1.5">
+						<label for={`browse-country-${locale}`} class="text-xs font-medium text-slate-600">{filt.countryLegend}</label>
+						<select
+							name="country"
+							id={`browse-country-${locale}`}
+							class="min-h-11 rounded-xl border border-slate-200/90 bg-white/90 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
 						>
-							{u.search}
-						</button>
-						{
-							searchQ ? (
-								<a
-									href={listingsPath}
-									class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300 sm:rounded-full"
-								>
-									{u.allListings}
-								</a>
-							) : null
-						}
+							{
+								filt.countries.map(({ slug, label }) => (
+									<option value={slug}>{label}</option>
+								))
+							}
+						</select>
+					</div>
+					<div class="flex flex-col gap-1.5">
+						<label for={`browse-type-${locale}`} class="text-xs font-medium text-slate-600">{filt.typeLegend}</label>
+						<select
+							name="type"
+							id={`browse-type-${locale}`}
+							class="min-h-11 rounded-xl border border-slate-200/90 bg-white/90 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+						>
+							{
+								filt.types.map(({ slug, label }) => (
+									<option value={slug}>{label}</option>
+								))
+							}
+						</select>
+					</div>
+					<div class="flex flex-col gap-1.5">
+						<label for={`browse-price-${locale}`} class="text-xs font-medium text-slate-600">{filt.priceLegend}</label>
+						<select
+							name="price_max"
+							id={`browse-price-${locale}`}
+							class="min-h-11 rounded-xl border border-slate-200/90 bg-white/90 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+						>
+							{
+								filt.prices.map(({ value, label }) => (
+									<option value={value}>{label}</option>
+								))
+							}
+						</select>
+					</div>
+					<div class="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1 lg:justify-end">
+						<span class="hidden text-xs font-medium text-transparent lg:inline" aria-hidden="true">&nbsp;</span>
+						<div class="flex min-h-[2.75rem] flex-wrap gap-2">
+							<button
+								type="submit"
+								class="inline-flex flex-1 min-w-[7rem] items-center justify-center rounded-xl bg-gray-900 px-5 text-sm font-semibold text-white transition hover:bg-gray-800 lg:flex-auto"
+							>
+								{L.search}
+							</button>
+							<a
+								href={listingsPath}
+								class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300"
+							>
+								{L.allListings}
+							</a>
+						</div>
 					</div>
 				</div>
 			</form>
+
+			<script is:inline>
+				document.addEventListener('DOMContentLoaded', () => {
+					const form = document.getElementById('listing-browse-search');
+					if (!form || !(form instanceof HTMLFormElement)) return;
+					const params = new URLSearchParams(window.location.search);
+					const names = /** @type {const} */ (['q', 'country', 'type', 'price_max']);
+					for (const name of names) {
+						const v = params.get(name);
+						if (v == null) continue;
+						const el = form.elements.namedItem(name);
+						if (el instanceof HTMLInputElement) el.value = v;
+						else if (el instanceof HTMLSelectElement) {
+							const exists = [...el.options].some((opt) => opt.value === v);
+							if (exists) el.value = v;
+						}
+					}
+				});
+			</script>
+
 			<div class="mt-10">
-				<ListingsGrid
-					client:only="react"
-					initialSearch={searchQ}
-					locale={locale}
-					listingsListPath={listingsPath}
-					listingDetailBasePath={detailPath}
-				/>
+				<ListingsBrowse client:only="react" locale={locale} listingsListPath={listingsPath} listingDetailBasePath={detailPath} />
 			</div>
 		</div>
 	</div>

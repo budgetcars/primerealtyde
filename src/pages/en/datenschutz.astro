@@ -1,0 +1,118 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withLocalePath } from '../../i18n/locale';
+
+const homeHref = withLocalePath('/', 'en');
+---
+
+<BaseLayout
+	locale="en"
+	title="Privacy policy"
+	description="Privacy information for Prime Realty under the GDPR — courtesy English version."
+>
+	<div class="mx-auto max-w-3xl px-4 py-12 md:py-16">
+		<article class="glass-panel px-8 py-10 md:px-10 md:py-14">
+			<h1 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">Privacy policy</h1>
+			<p class="mt-3 text-sm text-slate-600">Version: December 2025</p>
+			<p class="mt-6 text-sm leading-relaxed text-slate-700">
+				This privacy policy informs you how we process personal data in connection with our online offering.
+				Responsible entity under the GDPR has its seat in Germany.
+			</p>
+
+			<section class="mt-14 space-y-4 text-sm leading-relaxed text-slate-700">
+				<h2 class="text-xl font-bold text-gray-900">1. Controller</h2>
+				<p>
+					<strong class="font-medium text-gray-900">Prime Realty · Real Estate by the Sea</strong><br />
+					Panoramastraße 13<br />
+					73765 Neuhausen, Deutschland
+				</p>
+				<p>
+					E-mail:
+					<a href="mailto:info@prime-realty.de" class="text-accent hover:text-accent-muted"> info@prime-realty.de</a><br />
+					Tel.: +49 (0) 711 252 55 610
+				</p>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">2. Collection and storage of personal data</h2>
+
+				<h3 class="pt-6 text-base font-semibold text-gray-900">2.1 Visiting our website</h3>
+				<p>
+					When you access our website, your browser transmits data to our server temporarily stored in a log file:
+				</p>
+				<ul class="mt-3 list-disc space-y-2 pl-5 marker:text-accent">
+					<li>IP address of the requesting device</li>
+					<li>Date and time of access</li>
+					<li>Name and URL of the requested file</li>
+					<li>Referrer URL where applicable</li>
+					<li>Browser used and OS if transmitted</li>
+				</ul>
+				<p>
+					Legal basis: Art.&nbsp;6 (1)(f) GDPR (legitimate interest in provision and security of our site).
+				</p>
+
+				<h3 class="pt-6 text-base font-semibold text-gray-900">2.2 Contact form</h3>
+				<p>When using our contact channels we collect:</p>
+				<ul class="mt-3 list-disc space-y-2 pl-5 marker:text-accent">
+					<li>Name</li>
+					<li>E-mail address</li>
+					<li>Telephone number (optional)</li>
+					<li>Message content</li>
+				</ul>
+				<p>
+					Legal basis: Art.&nbsp;6 (1)(a) GDPR if consent applies, otherwise Art.&nbsp;6 (1)(b)/(f) to respond to your enquiry.
+				</p>
+
+				<h2 id="cookie-settings" class="scroll-mt-28 pt-12 text-xl font-bold text-gray-900">3. Cookies</h2>
+				<p>
+					We use cookies and similar technologies. You can revisit this section via ‘Cookie settings’ in the footer.
+				</p>
+
+				<h3 class="pt-6 text-base font-semibold text-gray-900">3.1 Necessary cookies</h3>
+				<p>Technically essential for navigation and secure areas of this site.</p>
+
+				<h3 class="pt-6 text-base font-semibold text-gray-900">3.2 Analytics cookies</h3>
+				<p>
+					Optional understanding of aggregated use—only after consent pursuant to Art.&nbsp;6 (1)(a) GDPR.
+				</p>
+
+				<h3 class="pt-6 text-base font-semibold text-gray-900">3.3 Marketing cookies</h3>
+				<p>Set only subject to consent (Art.&nbsp;6 (1)(a) GDPR).</p>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">4. Disclosure of data</h2>
+				<p>We disclose personal data beyond the scenarios below only:</p>
+				<ul class="mt-4 list-disc space-y-2 pl-5 marker:text-accent">
+					<li>With your consent (Art.&nbsp;6 (1)(a) GDPR)</li>
+					<li>Where legally required or for establishment of legal claims (Art.&nbsp;6 (1)(f/c) GDPR)</li>
+				</ul>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">5. Your rights</h2>
+				<p>You have rights including:</p>
+				<ul class="mt-4 list-disc space-y-2 pl-5 marker:text-accent">
+					<li>Right of access (Art.&nbsp;15 GDPR)</li>
+					<li>Right to rectification (Art.&nbsp;16 GDPR)</li>
+					<li>Right to erasure (Art.&nbsp;17 GDPR)</li>
+					<li>Right to restriction (Art.&nbsp;18 GDPR)</li>
+					<li>Right to portability (Art.&nbsp;20 GDPR)</li>
+					<li>Right to object (Art.&nbsp;21 GDPR)</li>
+					<li>Right to withdraw consent (Art.&nbsp;7 (3) GDPR)</li>
+				</ul>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">6. Complaint to a supervisory authority</h2>
+				<p>
+					You may lodge a complaint with a data protection supervisory authority over our processing activities.
+				</p>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">7. Security</h2>
+				<p>
+					Connections use TLS encryption as supported by your browser; look for lock / HTTPS indicators in your client.
+				</p>
+
+				<h2 class="pt-12 text-xl font-bold text-gray-900">8. Changes</h2>
+				<p>This version is dated December&nbsp;2025 and may change with legal or product updates.</p>
+			</section>
+
+			<p class="mt-14">
+				<a href={homeHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">← Back to home</a>
+			</p>
+		</article>
+	</div>
+</BaseLayout>
