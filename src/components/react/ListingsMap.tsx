@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
+import { numberingLocale } from '../../i18n/locale';
 import { listingsUi } from '../../i18n/copy/listingsUi';
 import 'leaflet/dist/leaflet.css';
 
@@ -18,7 +19,7 @@ function escapeHtml(s: string): string {
 
 function formatPriceShort(euro: number | null, locale: Locale): string {
 	const L = listingsUi[locale];
-	const num = locale === 'en' ? 'en-GB' : 'de-DE';
+	const num = numberingLocale(locale);
 	if (euro == null) return L.priceOnRequest;
 	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
 }
@@ -48,6 +49,7 @@ export function ListingsMap({
 		if (!el) return;
 
 		let cancelled = false;
+		let layoutTimer = 0;
 
 		import('leaflet').then((L) => {
 			if (cancelled || !containerRef.current) return;
@@ -69,10 +71,14 @@ export function ListingsMap({
 			setMapReady(true);
 
 			requestAnimationFrame(() => map.invalidateSize());
+			layoutTimer = window.setTimeout(() => {
+				if (!cancelled && mapRef.current) map.invalidateSize();
+			}, 280);
 		});
 
 		return () => {
 			cancelled = true;
+			if (layoutTimer) window.clearTimeout(layoutTimer);
 			setMapReady(false);
 			if (mapRef.current) {
 				mapRef.current.remove();
@@ -99,7 +105,8 @@ export function ListingsMap({
 		if (withCoords.length === 0) {
 			map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 			requestAnimationFrame(() => map.invalidateSize());
-			return;
+			const tid = window.setTimeout(() => map.invalidateSize(), 200);
+			return () => window.clearTimeout(tid);
 		}
 
 		const bounds = L.latLngBounds([]);
@@ -131,6 +138,8 @@ export function ListingsMap({
 		}
 
 		requestAnimationFrame(() => map.invalidateSize());
+		const tid = window.setTimeout(() => map.invalidateSize(), 200);
+		return () => window.clearTimeout(tid);
 	}, [listings, detailBasePath, locale, mapReady]);
 
 	return (

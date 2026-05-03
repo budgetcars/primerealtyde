@@ -21,6 +21,10 @@ function stableHash(seed: string): number {
 	return Math.abs(h);
 }
 
+/** Vollbreite Hero-Kulisse (Unsplash Lizenz — regionaler Küstencharakter). */
+export const HOME_HERO_BACKDROP =
+	'https://images.unsplash.com/photo-1565538810643-ba5d61f84c6f?auto=format&fit=crop&w=2400&q=82';
+
 /** Stabile Auswahl eines Motivs pro Listing (ohne Netzwerk). */
 export function unsplashListingHero(seed?: string): string {
 	const i = seed ? stableHash(seed) : 0;

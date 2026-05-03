@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
-import {
-	collection,
-	getDocs,
-	limit,
-	orderBy,
-	query,
-	type QueryConstraint,
-} from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
 import { listingsUi } from '../../i18n/copy/listingsUi';
+import { withLocalePath } from '../../i18n/locale';
 import { listingMatchesQuery } from '../../lib/listingsQuery';
 import { getDb, isFirebaseConfigured } from '../../lib/firebase/client';
 import { ListingCard } from './ListingCard';
+
+function sortListingsByCreatedAt(list: Listing[]): Listing[] {
+	return [...list].sort((a, b) => {
+		const as = a.createdAt?.seconds ?? 0;
+		const bs = b.createdAt?.seconds ?? 0;
+		if (bs !== as) return bs - as;
+		return (b.id ?? '').localeCompare(a.id ?? '');
+	});
+}
 
 export function ListingsGrid({
 	limit: limitCount,
@@ -22,7 +25,6 @@ export function ListingsGrid({
 	listingDetailBasePath = '/immobilie',
 }: {
 	limit?: number;
-	/** GET-Parameter `q` für die Listing-Übersicht – clientseitige Textsuche */
 	initialSearch?: string;
 	locale?: Locale;
 	listingsListPath?: string;
@@ -38,17 +40,16 @@ export function ListingsGrid({
 	useEffect(() => {
 		if (skipped) return;
 		const db = getDb();
-		const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')];
-		if (limitCount != null) constraints.push(limit(limitCount));
-		const q = query(collection(db, 'listings'), ...constraints);
-		getDocs(q)
+		getDocs(collection(db, 'listings'))
 			.then((snap) => {
 				const list: Listing[] = [];
 				snap.forEach((d) => {
 					const data = d.data() as Omit<Listing, 'id'>;
 					list.push({ id: d.id, ...data });
 				});
-				setItems(list);
+				const sorted = sortListingsByCreatedAt(list);
+				setItems(limitCount != null ? sorted.slice(0, limitCount) : sorted);
+				setErr(null);
 			})
 			.catch((e: Error) => setErr(e.message))
 			.finally(() => setLoading(false));
@@ -84,7 +85,7 @@ export function ListingsGrid({
 			<p className="glass-panel-soft px-4 py-6 text-center text-sm text-slate-600">
 				{L.noListingsIntro}{' '}
 				<a
-					href={listingsListPath.startsWith('/en') ? '/en/kontakt' : '/kontakt'}
+					href={withLocalePath('/kontakt', locale)}
 					className="font-semibold text-amber-900 underline decoration-amber-400/70 hover:text-amber-950"
 				>
 					{L.noListingsInquiry}

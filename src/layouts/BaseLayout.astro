@@ -1,7 +1,16 @@
 ---
 import '../styles/global.css';
 import type { Locale } from '../i18n/locale';
-import { getLocale, pathHasLocaleMirror, stripLocalePrefix, withLocalePath } from '../i18n/locale';
+import {
+	getLocale,
+	locales,
+	localeHreflang,
+	localeHtmlLang,
+	localeOg,
+	pathHasLocaleMirror,
+	stripLocalePrefix,
+	withLocalePath,
+} from '../i18n/locale';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import LanguageFlagSwitch from '../components/LanguageFlagSwitch.astro';
@@ -21,6 +30,9 @@ const defaultMeta: Record<Locale, string> = {
 		'Prime Realty – Premium-Immobilien in Montenegro, Zypern, Nordzypern, Türkei, Georgien, Bali und Thailand.',
 	en:
 		'Prime Realty – premium real estate in Montenegro, Cyprus, Northern Cyprus, Turkey, Georgia, Bali and Thailand.',
+	ru:
+		'Prime Realty — премиальная недвижимость в Черногории, на Кипре, в Турции, Грузии, Бали и Таиланде.',
+	zh: 'Prime Realty — 聚焦黑山、塞浦路斯、土耳其、格鲁吉亚、巴厘岛与泰国等区域的高端房产。',
 };
 
 const { title } = Astro.props;
@@ -32,21 +44,25 @@ const canonicalURL =
 		? new URL(Astro.url.pathname + search, Astro.site)
 		: new URL(Astro.url.href);
 
-const alternateDe =
+const alternateHrefset =
+	pathHasLocaleMirror(stripped) && Astro.site != null
+		? locales.map((lc) => ({
+				lc,
+				href: new URL(`${withLocalePath(stripped, lc)}${search}`, Astro.site).href,
+				hreflang: localeHreflang(lc),
+			}))
+		: null;
+
+const alternateXDefaultHref =
 	pathHasLocaleMirror(stripped) && Astro.site != null
 		? new URL(`${withLocalePath(stripped, 'de')}${search}`, Astro.site).href
 		: null;
-const alternateEn =
-	pathHasLocaleMirror(stripped) && Astro.site != null
-		? new URL(`${withLocalePath(stripped, 'en')}${search}`, Astro.site).href
-		: null;
 
-const ogLocale = locale === 'en' ? 'en_GB' : 'de_DE';
-const htmlLang = locale === 'en' ? 'en' : 'de';
+const ogLocale = localeOg(locale);
 ---
 
 <!doctype html>
-<html lang={htmlLang}>
+<html lang={localeHtmlLang(locale)}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -57,11 +73,12 @@ const htmlLang = locale === 'en' ? 'en' : 'de';
 		<meta name="theme-color" content="#0f2744" />
 		<link rel="canonical" href={canonicalURL.href} />
 		{
-			alternateDe && alternateEn ? (
+			alternateHrefset && alternateXDefaultHref ? (
 				<>
-					<link rel="alternate" hreflang="de" href={alternateDe} />
-					<link rel="alternate" hreflang="en" href={alternateEn} />
-					<link rel="alternate" hreflang="x-default" href={alternateDe} />
+					{alternateHrefset.map(({ href, hreflang }) => (
+						<link rel="alternate" hreflang={hreflang} href={href} />
+					))}
+					<link rel="alternate" hreflang="x-default" href={alternateXDefaultHref} />
 				</>
 			) : null
 		}
@@ -88,9 +105,20 @@ const htmlLang = locale === 'en' ? 'en' : 'de';
 			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap"
 			rel="stylesheet"
 		/>
+		{
+			locale === 'zh' ? (
+				<link
+					href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+					rel="stylesheet"
+				/>
+			) : null
+		}
 		<title>{fullTitle}</title>
 	</head>
-	<body class="flex min-h-screen flex-col">
+	<body
+		class="flex min-h-screen flex-col"
+		style={locale === 'zh' ? "font-family: Inter, 'Noto Sans SC', system-ui, sans-serif" : undefined}
+	>
 		<Header locale={locale} />
 		<main class="flex-1">
 			<slot />

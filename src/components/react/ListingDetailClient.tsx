@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
+import { numberingLocale } from '../../i18n/locale';
 import { listingsUi as copy } from '../../i18n/copy/listingsUi';
 import { getDb, isFirebaseConfigured } from '../../lib/firebase/client';
 import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
@@ -9,16 +10,15 @@ import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
 type UiStrings = (typeof copy)['de'];
 
 function formatPrice(euro: number | null, locale: Locale): string {
-	const num = locale === 'en' ? 'en-GB' : 'de-DE';
+	const num = numberingLocale(locale);
 	if (euro == null) return copy[locale].priceOnRequest;
 	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
 }
 
 function formatPriceSqm(euro: number | null, locale: Locale): string {
-	const L = copy[locale];
 	if (euro == null) return '–';
-	const num = locale === 'en' ? 'en-GB' : 'de-DE';
-	return `${new Intl.NumberFormat(num, { maximumFractionDigits: 0 }).format(euro)} ${locale === 'en' ? '€/m²' : '€/m²'}`;
+	const num = numberingLocale(locale);
+	return `${new Intl.NumberFormat(num, { maximumFractionDigits: 0 }).format(euro)} €/m²`;
 }
 
 function initialIdFromUrl(): string | null {

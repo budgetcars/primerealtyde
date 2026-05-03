@@ -59,4 +59,18 @@
 		outline: 2px solid #c9a227;
 		outline-offset: 2px;
 	}
+
+	/** Leaflet/OSM tiles: Tailwind Preflight setzt img max-width — sonst keine sichtbare Karte */
+	.leaflet-container img.leaflet-tile {
+		max-width: none !important;
+		height: auto;
+	}
+
+	.leaflet-container svg {
+		max-width: none !important;
+	}
+
+	.leaflet-container img.leaflet-marker-icon {
+		max-width: none !important;
+	}
 }

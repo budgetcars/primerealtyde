@@ -15,7 +15,7 @@ const imprintHref = withLocalePath('/impressum', locale);
 const privacyHref = withLocalePath('/datenschutz', locale);
 const agbHref = withLocalePath('/agb', locale);
 const ntHref = withLocalePath('/nutzungsbedingungen', locale);
-const cookieHash = locale === 'en' ? 'cookie-settings' : 'cookie-einstellungen';
+const cookieHash = locale === 'de' ? 'cookie-einstellungen' : 'cookie-settings';
 const cookieHref = `${privacyHref}#${cookieHash}`;
 
 const year = new Date().getFullYear();

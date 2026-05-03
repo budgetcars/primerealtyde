@@ -1,5 +1,6 @@
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
+import { numberingLocale } from '../../i18n/locale';
 import { listingsUi } from '../../i18n/copy/listingsUi';
 import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
 
@@ -9,7 +10,7 @@ export function listingHref(detailBase: string, id: string): string {
 
 function formatPrice(euro: number | null, locale: Locale): string {
 	const L = listingsUi[locale];
-	const num = locale === 'en' ? 'en-GB' : 'de-DE';
+	const num = numberingLocale(locale);
 	if (euro == null) return L.priceOnRequest;
 	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
 }

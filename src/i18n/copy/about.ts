@@ -85,4 +85,90 @@ export const aboutCopy = {
 		],
 		ctaListings: 'Browse listings',
 	},
+	ru: {
+		title: 'О нас',
+		metaDescription:
+			'Prime Realty — недвижимость класса люкс на Черногории, Кипре, Турции, Грузии, Бали и в Таиланде.',
+		eyebrow: 'Prime Realty · Регионы фокуса',
+		introBodyBefore: 'Prime Realty сопровождает клиентов по объектам класса люкс в регионах ',
+		marketsLine: 'Черногория, Кипр, Северный Кипр, Турция, Грузия, Бали и Таиланд',
+		introStrongAfter:
+			'. От предварительного отбора и проверки до сделки — структурно и с личным вниманием.',
+		serviceHeading: 'Сервис под ключ',
+		serviceLead:
+			'Чёткая структура и живое общение: от первого анализа до закрытия.',
+		service: [
+			{
+				letter: 'A',
+				title: 'Аналитика',
+				text: 'Контекст рынка и подбор вариантов под ваш бюджет и цели.',
+			},
+			{
+				letter: 'B',
+				title: 'Советы',
+				text: 'Специалисты, которые понимают местную специфику и регуляторику.',
+			},
+			{
+				letter: 'C',
+				title: 'Соответствие',
+				text: 'Сопровождение по юридическим и налоговым аспектам сделки.',
+			},
+			{
+				letter: 'D',
+				title: 'Реализация',
+				text: 'Переговоры, документооборот и финальное оформление.',
+			},
+		] as const,
+		reasonsHeading: 'Почему Prime Realty',
+		reasonsList: [
+			'Доступ к кураторскому каталогу',
+			'Знание личных особенностей каждого направления',
+			'Прямота в коммуникации',
+			'Поддержка и после ключей',
+		],
+		ctaListings: 'Каталог объектов',
+	},
+	zh: {
+		title: '关于我们',
+		metaDescription:
+			'Prime Realty — 在黑山、塞浦路斯、土耳其、格鲁吉亚、巴厘岛与泰国等区域提供高端房产顾问服务。',
+		eyebrow: 'Prime Realty · 核心市场',
+		introBodyBefore: 'Prime Realty 在 ',
+		marketsLine: '黑山、塞浦路斯、北塞浦路斯、土耳其、格鲁吉亚、巴厘岛与泰国',
+		introStrongAfter:
+			' 等区域甄选高端在售物业——从比价与尽调到成交全流程陪伴。',
+		serviceHeading: '端到端服务体系',
+		serviceLead:
+			'从分析研判到落地的清晰节奏，并保持随时可沟通的团队协作。',
+		service: [
+			{
+				letter: 'A',
+				title: '研判',
+				text: '结合预算与偏好进行市场理解与资产筛选。',
+			},
+			{
+				letter: 'B',
+				title: '顾问',
+				text: '熟悉法规与地缘差异的本地化团队提供专业建议。',
+			},
+			{
+				letter: 'C',
+				title: '合规',
+				text: '围绕交易链路提供法务与税费方面的协助。',
+			},
+			{
+				letter: 'D',
+				title: '执行',
+				text: '从谈判斡旋直至顺利交房的全流程把控。',
+			},
+		] as const,
+		reasonsHeading: '为什么选择 Prime Realty',
+		reasonsList: [
+			'进入经过筛选的高端库存',
+			'熟悉各区域的在地经验',
+			'沟通节奏透明直白',
+			'交付之后仍可咨询',
+		],
+		ctaListings: '浏览房源列表',
+	},
 } satisfies Record<Locale, unknown>;
