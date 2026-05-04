@@ -37,7 +37,7 @@ const navItems = [
 			aria-label="Prime Realty Ferienimmobilien"
 		>
 			<img
-				src="/brand/prime-realty-logo.png"
+				src="/logo-prime.png"
 				alt=""
 				width={1254}
 				height={1254}
@@ -92,18 +92,34 @@ const navItems = [
 </header>
 
 <style>
-	/** Kompakte Leiste sobald nicht mehr ganz oben — Logo weg, Wortmarke, weniger Padding */
+	/** Kompakte Leiste beim Scroll — kleineres Logo, weniger Padding (Wortmarke nur Fallback) */
 	#site-header .header-brand-wordmark {
 		display: none;
 		line-height: 1.15;
 	}
 
+	/** Beim Scrollen Logo verkleinern (nicht ausblenden), damit die Marke sichtbar bleibt */
 	#site-header[data-compact='true'] .header-brand-logo {
-		display: none;
+		height: 2.5rem;
+		max-height: 2.75rem;
+	}
+
+	@media (min-width: 640px) {
+		#site-header[data-compact='true'] .header-brand-logo {
+			height: 2.75rem;
+			max-height: 3rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		#site-header[data-compact='true'] .header-brand-logo {
+			height: 3rem;
+			max-height: 3.25rem;
+		}
 	}
 
 	#site-header[data-compact='true'] .header-brand-wordmark {
-		display: block;
+		display: none;
 	}
 
 	#site-header[data-compact='true'] .header-main-row {

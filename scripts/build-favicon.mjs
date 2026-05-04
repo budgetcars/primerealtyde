@@ -1,6 +1,6 @@
 /**
  * Baut favicon.png, favicon.ico, favicon.svg und apple-touch-icon.png
- * aus public/brand/prime-realty-logo.png (sharp + to-ico).
+ * aus public/logo-prime.png (sharp + to-ico).
  */
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,7 +9,7 @@ import sharp from 'sharp';
 import toIco from 'to-ico';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const brand = join(root, 'public/brand/prime-realty-logo.png');
+const brand = join(root, 'public/logo-prime.png');
 
 async function pngSquare(size) {
 	return sharp(brand).resize(size, size).png().toBuffer();
