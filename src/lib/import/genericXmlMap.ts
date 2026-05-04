@@ -166,31 +166,55 @@ export function collectRelativePathsFromRecord(record: Element): XmlPathSample[]
 }
 
 function getByPath(root: Element, path: string): string {
-	if (!path) return '';
+	const all = getAllByPath(root, path);
+	return all[0] ?? '';
+}
+
+function getAllByPath(root: Element, path: string): string[] {
+	if (!path) return [];
 	const trimmed = path.trim();
+	if (!trimmed) return [];
 	if (trimmed.startsWith('@')) {
-		return root.getAttribute(trimmed.slice(1))?.trim() ?? '';
+		const v = root.getAttribute(trimmed.slice(1))?.trim();
+		return v ? [v] : [];
 	}
 
-	let el: Element | null = root;
 	const segments = trimmed.split('/').filter(Boolean);
+	let frontier: Element[] = [root];
 
 	for (const seg of segments) {
-		if (!el) return '';
+		if (!frontier.length) return [];
 		if (seg.startsWith('@')) {
-			return el.getAttribute(seg.slice(1))?.trim() ?? '';
+			const vals = frontier
+				.map((el) => el.getAttribute(seg.slice(1))?.trim() ?? '')
+				.filter(Boolean);
+			return vals;
 		}
 		const bm = /^([^[]+)(?:\[(\d+)\])?$/.exec(seg);
-		if (!bm) return '';
+		const wm = /^([^[]+)\[\*\]$/.exec(seg);
+		if (wm) {
+			const tag = wm[1]!;
+			const next: Element[] = [];
+			for (const base of frontier) {
+				const candidates = [...base.children].filter((c) => elemTagKey(c) === tag);
+				next.push(...candidates);
+			}
+			frontier = next;
+			continue;
+		}
+		if (!bm) return [];
 		const tag = bm[1]!;
 		const idx = bm[2] != null ? parseInt(bm[2]!, 10) : 0;
-		const candidates = [...el.children].filter((c) => elemTagKey(c) === tag);
-		el = candidates[idx] ?? null;
+		const next: Element[] = [];
+		for (const base of frontier) {
+			const candidates = [...base.children].filter((c) => elemTagKey(c) === tag);
+			if (candidates[idx]) next.push(candidates[idx]!);
+		}
+		frontier = next;
 	}
 
-	if (!el) return '';
-	if (el.children.length === 0) return directTextTrimmed(el);
-	return directTextTrimmed(el);
+	const vals = frontier.map((el) => directTextTrimmed(el)).filter(Boolean);
+	return vals;
 }
 
 /** Wert aller `{{pfad}}`-Platzhalter ersetzen (relativ zu einem Datensatz-Element). */
@@ -247,7 +271,17 @@ export function listingInputFromMappedRecord(
 
 	const images = mapping.images
 		.split(/\r?\n/)
-		.map((line) => expandMappingTemplate(record, line).trim())
+		.flatMap((line) => {
+			const trimmed = line.trim();
+			if (!trimmed) return [];
+			const pureToken = /^\{\{\s*([^}]+?)\s*\}\}$/.exec(trimmed);
+			if (pureToken) {
+				return getAllByPath(record, pureToken[1]!)
+					.map((v) => v.trim())
+					.filter(Boolean);
+			}
+			return [expandMappingTemplate(record, trimmed).trim()].filter(Boolean);
+		})
 		.filter(Boolean);
 
 	const featured = parseFeaturedFlag(ex(mapping.featured));
@@ -281,12 +315,23 @@ export function listingInputFromMappedRecord(
 
 export function guessMappingFromPaths(paths: string[]): GenericXmlFieldMapping {
 	const m = defaultGenericXmlFieldMapping();
+	const normalized = paths.map((p) => ({ original: p, lower: p.toLowerCase() }));
+
+	const matchCandidate = (pLower: string, candidateLower: string): boolean => {
+		if (pLower === candidateLower) return true;
+		if (pLower.endsWith(`/${candidateLower}`)) return true;
+		if (pLower.endsWith(`/${candidateLower}[0]`)) return true;
+		if (pLower.endsWith(`/${candidateLower}[1]`)) return true;
+		if (candidateLower.startsWith('@') && pLower.endsWith(`/${candidateLower}`)) return true;
+		return false;
+	};
 
 	const pick = (cands: string[]) => {
 		for (const c of cands) {
-			if (paths.includes(c)) return c;
 			const lc = c.toLowerCase();
-			for (const p of paths) if (p.toLowerCase() === lc) return p;
+			for (const p of normalized) {
+				if (matchCandidate(p.lower, lc)) return p.original;
+			}
 		}
 		return null;
 	};
@@ -358,8 +403,8 @@ export function guessMappingFromPaths(paths: string[]): GenericXmlFieldMapping {
 	]);
 	if (ext) m.externalId = `{{${ext}}}`;
 
-	const img = paths.find((p) => {
-		const l = p.toLowerCase();
+	const img = normalized.find((entry) => {
+		const l = entry.lower;
 		return (
 			l.includes('picture') ||
 			l.includes('image') ||
@@ -368,7 +413,10 @@ export function guessMappingFromPaths(paths: string[]): GenericXmlFieldMapping {
 			l.endsWith('/href')
 		);
 	});
-	if (img) m.images = `{{${img}}}`;
+	if (img) {
+		const wildcard = img.original.replace(/\[\d+\]/g, '[*]');
+		m.images = `{{${wildcard}}}`;
+	}
 
 	const f = pick(['propertyofweek', 'featured', 'highlight']);
 	if (f) m.featured = `{{${f}}}`;

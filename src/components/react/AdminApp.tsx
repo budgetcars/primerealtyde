@@ -10,10 +10,16 @@ import {
 	addDoc,
 	collection,
 	deleteDoc,
+	type DocumentData,
 	doc,
 	getDoc,
 	getDocs,
+	limit,
+	orderBy,
+	query,
 	serverTimestamp,
+	startAfter,
+	type QueryDocumentSnapshot,
 	updateDoc,
 	writeBatch,
 } from 'firebase/firestore';
@@ -49,6 +55,7 @@ import { formatListingPricePrimary } from '../../lib/listingPriceDisplay';
 const LISTINGS = 'listings';
 /** Firestore erlaubt höchstens 500 Operationen pro Batch-Commit */
 const FIRESTORE_BATCH_LIMIT = 500;
+const INVENTORY_PAGE_SIZE = 50;
 
 /** Kompakte Icon-Buttons in der Bestands-Tabelle */
 const invIconBtn =
@@ -155,6 +162,10 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [inventory, setInventory] = useState<Listing[]>([]);
 	const [inventoryLoading, setInventoryLoading] = useState(false);
 	const [inventoryError, setInventoryError] = useState<string | null>(null);
+	const [inventoryPage, setInventoryPage] = useState(1);
+	const [inventoryHasNextPage, setInventoryHasNextPage] = useState(false);
+	const [inventoryNextCursor, setInventoryNextCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+	const [inventoryPageCursors, setInventoryPageCursors] = useState<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
 	const [selectedListingIds, setSelectedListingIds] = useState<Set<string>>(() => new Set());
 	const inventorySelectAllRef = useRef<HTMLInputElement>(null);
 
@@ -205,25 +216,72 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [xmlExportPreset, setXmlExportPreset] = useState<'all' | 'featured' | 'manual' | 'adriom' | 'xml'>('all');
 	const [xmlExportCountry, setXmlExportCountry] = useState('');
 
-	const loadInventory = useCallback(async () => {
+	const loadInventory = useCallback(async (opts?: {
+		page?: number;
+		cursor?: QueryDocumentSnapshot<DocumentData> | null;
+		cursors?: (QueryDocumentSnapshot<DocumentData> | null)[];
+	}) => {
 		if (skipped) return;
 		const db = getDb();
+		const page = opts?.page ?? 1;
+		const cursor = opts?.cursor ?? null;
+		const cursors = opts?.cursors ?? [null];
 		setInventoryError(null);
 		setInventoryLoading(true);
 		try {
-			const snap = await getDocs(collection(db, LISTINGS));
+			const constraints = [orderBy('title'), limit(INVENTORY_PAGE_SIZE + 1)];
+			if (cursor) constraints.push(startAfter(cursor));
+			const snap = await getDocs(query(collection(db, LISTINGS), ...constraints));
+			const docs = snap.docs;
+			const pageDocs = docs.slice(0, INVENTORY_PAGE_SIZE);
 			const rows: Listing[] = [];
-			snap.forEach((d) => {
+			pageDocs.forEach((d) => {
 				rows.push({ id: d.id, ...(d.data() as Omit<Listing, 'id'>) });
 			});
-			rows.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '', 'de', { sensitivity: 'base' }));
 			setInventory(rows);
+			const hasNext = docs.length > INVENTORY_PAGE_SIZE;
+			setInventoryHasNextPage(hasNext);
+			setInventoryNextCursor(hasNext ? pageDocs[pageDocs.length - 1] ?? null : null);
+			setInventoryPage(page);
+			setInventoryPageCursors(cursors);
 		} catch (e: unknown) {
 			setInventoryError(e instanceof Error ? e.message : 'Bestand konnte nicht geladen werden');
 		} finally {
 			setInventoryLoading(false);
 		}
 	}, [skipped]);
+
+	const reloadInventoryPage = useCallback(async () => {
+		const cursor = inventoryPageCursors[inventoryPage - 1] ?? null;
+		await loadInventory({
+			page: inventoryPage,
+			cursor,
+			cursors: inventoryPageCursors,
+		});
+	}, [inventoryPage, inventoryPageCursors, loadInventory]);
+
+	async function goInventoryNextPage() {
+		if (busy || inventoryLoading || !inventoryHasNextPage || !inventoryNextCursor) return;
+		const nextPage = inventoryPage + 1;
+		const nextCursors = [...inventoryPageCursors];
+		nextCursors[nextPage - 1] = inventoryNextCursor;
+		await loadInventory({
+			page: nextPage,
+			cursor: inventoryNextCursor,
+			cursors: nextCursors,
+		});
+	}
+
+	async function goInventoryPrevPage() {
+		if (busy || inventoryLoading || inventoryPage <= 1) return;
+		const prevPage = inventoryPage - 1;
+		const prevCursor = inventoryPageCursors[prevPage - 1] ?? null;
+		await loadInventory({
+			page: prevPage,
+			cursor: prevCursor,
+			cursors: inventoryPageCursors.slice(0, prevPage),
+		});
+	}
 
 	useEffect(() => {
 		if (skipped) return;
@@ -236,7 +294,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 
 	useEffect(() => {
 		if (skipped || !user) return;
-		void loadInventory();
+		void loadInventory({ page: 1, cursor: null, cursors: [null] });
 	}, [skipped, user, loadInventory]);
 
 	useEffect(() => {
@@ -394,7 +452,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			}
 
 			clearManualForm();
-			await loadInventory();
+			await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Speichern fehlgeschlagen');
 		} finally {
@@ -410,7 +468,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			await deleteDoc(doc(getDb(), LISTINGS, id));
 			setStatus('Eintrag gelöscht.');
 			if (editingId === id) clearManualForm();
-			await loadInventory();
+			await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
 		} finally {
@@ -422,7 +480,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		setBusy(true);
 		try {
 			await updateDoc(doc(getDb(), LISTINGS, id), { featured: !current });
-			await loadInventory();
+			await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Änderung fehlgeschlagen');
 		} finally {
@@ -450,7 +508,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 					? `${ids.length} Objekt(e) als Featured markiert.`
 					: `Featured bei ${ids.length} Objekt(en) entfernt.`,
 			);
-			await loadInventory();
+			await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Featured-Änderung fehlgeschlagen');
 		} finally {
@@ -483,7 +541,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			if (editingId && ids.includes(editingId)) clearManualForm();
 			setSelectedListingIds(new Set());
 			setStatus(`${ids.length} Eintrag/Einträge gelöscht.`);
-			await loadInventory();
+			await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
 		} finally {
@@ -1115,7 +1173,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			}
 			setXmlDialogOpen(false);
 			setXmlStaging(null);
-			await loadInventory();
+		await reloadInventoryPage();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Übernehmen fehlgeschlagen');
 		} finally {
@@ -1254,7 +1312,10 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						<button
 							type="button"
 							disabled={inventoryLoading || busy}
-							onClick={() => void loadInventory()}
+							onClick={() => {
+								setSelectedListingIds(new Set());
+								void loadInventory({ page: 1, cursor: null, cursors: [null] });
+							}}
 							className="rounded-lg border border-slate-200/90 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:bg-white/85 disabled:opacity-50"
 						>
 							{inventoryLoading ? 'Lade …' : 'Bestand aktualisieren'}
@@ -1341,10 +1402,11 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 					) : inventory.length === 0 ? (
 						<p className="glass-panel-soft px-5 py-8 text-center text-sm text-slate-600">Noch keine Objekte – legen Sie welche unter „Manuell“ oder „Feed / XML“ an.</p>
 					) : (
-						<div className="-mx-1 overflow-x-auto border border-slate-200 bg-white">
-							<table className="w-full min-w-[44rem] text-left text-sm">
-								<thead>
-									<tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+						<div className="space-y-3">
+							<div className="-mx-1 overflow-x-auto border border-slate-200 bg-white">
+								<table className="w-full min-w-[44rem] text-left text-sm">
+									<thead>
+										<tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
 										<th className="w-px whitespace-nowrap px-2 py-3 text-center" scope="col">
 											<input
 												ref={inventorySelectAllRef}
@@ -1365,10 +1427,10 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 										<th className="px-2 py-3 whitespace-nowrap">Preis</th>
 										<th className="px-2 py-3">Quelle</th>
 										<th className="px-4 py-3 text-right">Aktionen</th>
-									</tr>
-								</thead>
-								<tbody>
-									{inventory.map((row) => {
+										</tr>
+									</thead>
+									<tbody>
+										{inventory.map((row) => {
 										const id = row.id ?? '';
 										const label = row.title || id || 'Ohne Titel';
 										const previewHref = id ? `${previewBase}?id=${encodeURIComponent(id)}` : previewBase;
@@ -1467,9 +1529,33 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 												</td>
 											</tr>
 										);
-									})}
-								</tbody>
-							</table>
+										})}
+									</tbody>
+								</table>
+							</div>
+							<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+								<p>
+									Seite {inventoryPage} · max. {INVENTORY_PAGE_SIZE} Einträge
+								</p>
+								<div className="flex gap-2">
+									<button
+										type="button"
+										onClick={() => void goInventoryPrevPage()}
+										disabled={inventoryLoading || busy || inventoryPage <= 1}
+										className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+									>
+										Zurück
+									</button>
+									<button
+										type="button"
+										onClick={() => void goInventoryNextPage()}
+										disabled={inventoryLoading || busy || !inventoryHasNextPage}
+										className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+									>
+										Weiter
+									</button>
+								</div>
+							</div>
 						</div>
 					)}
 				</div>

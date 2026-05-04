@@ -16,6 +16,7 @@ import {
 import { buildXmlPathTree, type XmlPathTreeNode } from '../../lib/import/xmlPathTree';
 
 const TREE_PATH_CAP = 600;
+type TargetLang = 'de' | 'en' | 'ru' | 'zh';
 
 type GenericXmlMappingDialogProps = {
 	open: boolean;
@@ -154,6 +155,15 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 	const [pathFilter, setPathFilter] = useState('');
 	const [lastFocusedKey, setLastFocusedKey] = useState<keyof GenericXmlFieldMapping | null>('title');
 	const [dragOverKey, setDragOverKey] = useState<keyof GenericXmlFieldMapping | null>(null);
+	const [translateEnabled, setTranslateEnabled] = useState(false);
+	const [translateTarget, setTranslateTarget] = useState<TargetLang>('de');
+	const [translateFields, setTranslateFields] = useState({
+		title: true,
+		description: true,
+		propertyType: true,
+		city: false,
+		street: false,
+	});
 
 	useEffect(() => {
 		if (!open) {
@@ -187,6 +197,8 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 			setPathFilter('');
 			setTagCounts([]);
 			setParseError(null);
+			setTranslateEnabled(false);
+			setTranslateTarget('de');
 			return;
 		}
 		if (!parsed) return;
@@ -322,16 +334,65 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 
 	const handleApply = useCallback(() => {
 		if (!parsed?.doc || !selectedTag || !records.length) return;
-		const out: ListingInput[] = [];
-		for (const el of records) {
-			out.push(
-				listingInputFromMappedRecord(el, mapping, {
-					fallbackTitle: 'Immobilie',
-				}),
-			);
-		}
-		onApply(out);
-	}, [parsed, selectedTag, records, mapping, onApply]);
+		const doTranslate = async (input: ListingInput[]): Promise<ListingInput[]> => {
+			if (!translateEnabled) return input;
+			const batches: string[] = [];
+			const refs: Array<{ idx: number; key: keyof typeof translateFields }> = [];
+			input.forEach((row, idx) => {
+				(
+					['title', 'description', 'propertyType', 'city', 'street'] as const satisfies Array<
+						keyof typeof translateFields
+					>
+				).forEach((key) => {
+					if (!translateFields[key]) return;
+					const v = (row[key] ?? '').toString().trim();
+					if (!v) return;
+					refs.push({ idx, key });
+					batches.push(v);
+				});
+			});
+			if (!batches.length) return input;
+			try {
+				const chunks: string[][] = [];
+				for (let i = 0; i < batches.length; i += 25) chunks.push(batches.slice(i, i + 25));
+				const translated: string[] = [];
+				for (const chunk of chunks) {
+					const q = encodeURIComponent(chunk.join('\n@@@\n'));
+					const res = await fetch(
+						`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${translateTarget}&dt=t&q=${q}`,
+					);
+					if (!res.ok) throw new Error(`HTTP ${res.status}`);
+					const data = (await res.json()) as unknown;
+					const parts = (Array.isArray(data) && Array.isArray(data[0]) ? data[0] : []) as unknown[];
+					const text = parts
+						.map((p) => (Array.isArray(p) && typeof p[0] === 'string' ? p[0] : ''))
+						.join('');
+					translated.push(...text.split('\n@@@\n'));
+				}
+				const out = input.map((x) => ({ ...x }));
+				refs.forEach((r, i) => {
+					const t = translated[i]?.trim();
+					if (!t) return;
+					(out[r.idx] as Record<string, unknown>)[r.key] = t;
+				});
+				return out;
+			} catch {
+				return input;
+			}
+		};
+		void (async () => {
+			const out: ListingInput[] = [];
+			for (const el of records) {
+				out.push(
+					listingInputFromMappedRecord(el, mapping, {
+						fallbackTitle: 'Immobilie',
+					}),
+				);
+			}
+			const finalOut = await doTranslate(out);
+			onApply(finalOut);
+		})();
+	}, [parsed, selectedTag, records, mapping, onApply, translateEnabled, translateTarget, translateFields]);
 
 	if (!open) return null;
 
@@ -425,7 +486,7 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 									</div>
 								</div>
 
-								<div className="space-y-4">
+								<div className="space-y-3">
 									{MAP_KEYS.map((row) => {
 										const dnd = fieldDnDHandlers(row.key);
 										const dropRing =
@@ -435,44 +496,48 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 										return (
 											<label
 												key={row.key}
-												className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+												className="grid gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2 md:grid-cols-[minmax(11rem,15rem),1fr] md:items-start md:gap-3"
 											>
-												{row.label}
-												{row.helper ? (
-													<span className="block font-normal lowercase text-slate-400 first-letter:uppercase">
-														{row.helper}
-													</span>
-												) : null}
-												{row.multiline ? (
-													<textarea
-														value={mapping[row.key]}
-														onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
-														onFocus={() => setLastFocusedKey(row.key)}
-														onDragEnter={dnd.onDragEnter}
-														onDragOver={dnd.onDragOver}
-														onDragLeave={dnd.onDragLeave}
-														onDrop={dnd.onDrop}
-														draggable={false}
-														rows={row.rows ?? 3}
-														className={`${fieldInputCls(true)} transition-shadow ${dropRing}`}
-														placeholder="Pfad von rechts hierher ziehen oder tippen…"
-														spellCheck={false}
-													/>
-												) : (
-													<input
-														type="text"
-														value={mapping[row.key]}
-														onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
-														onFocus={() => setLastFocusedKey(row.key)}
-														onDragEnter={dnd.onDragEnter}
-														onDragOver={dnd.onDragOver}
-														onDragLeave={dnd.onDragLeave}
-														onDrop={dnd.onDrop}
-														draggable={false}
-														className={`${fieldInputCls(false)} transition-shadow ${dropRing}`}
-														spellCheck={false}
-													/>
-												)}
+												<span className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+													{row.label}
+													{row.helper ? (
+														<span className="mt-1 block font-normal lowercase text-slate-400 first-letter:uppercase">
+															{row.helper}
+														</span>
+													) : null}
+												</span>
+												<span className="block">
+													{row.multiline ? (
+														<textarea
+															value={mapping[row.key]}
+															onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
+															onFocus={() => setLastFocusedKey(row.key)}
+															onDragEnter={dnd.onDragEnter}
+															onDragOver={dnd.onDragOver}
+															onDragLeave={dnd.onDragLeave}
+															onDrop={dnd.onDrop}
+															draggable={false}
+															rows={row.rows ?? 3}
+															className={`${fieldInputCls(true)} transition-shadow ${dropRing}`}
+															placeholder="Pfad von rechts hierher ziehen oder tippen…"
+															spellCheck={false}
+														/>
+													) : (
+														<input
+															type="text"
+															value={mapping[row.key]}
+															onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
+															onFocus={() => setLastFocusedKey(row.key)}
+															onDragEnter={dnd.onDragEnter}
+															onDragOver={dnd.onDragOver}
+															onDragLeave={dnd.onDragLeave}
+															onDrop={dnd.onDrop}
+															draggable={false}
+															className={`${fieldInputCls(false)} transition-shadow ${dropRing}`}
+															spellCheck={false}
+														/>
+													)}
+												</span>
 											</label>
 										);
 									})}
@@ -496,6 +561,56 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 									) : (
 										<p className="mt-2 text-muted text-xs">Keine Elemente gefunden oder Mapping ungültig.</p>
 									)}
+								</div>
+
+								<div className="mt-4 rounded-xl border border-slate-200 bg-white/70 p-4">
+									<label className="inline-flex items-center gap-2 text-sm font-medium text-slate-800">
+										<input
+											type="checkbox"
+											checked={translateEnabled}
+											onChange={(e) => setTranslateEnabled(e.target.checked)}
+											className="h-4 w-4 rounded border-slate-300"
+										/>
+										AI-Übersetzung beim Import anwenden
+									</label>
+									<div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+										<span>Zielsprache</span>
+										<select
+											value={translateTarget}
+											disabled={!translateEnabled}
+											onChange={(e) => setTranslateTarget(e.target.value as TargetLang)}
+											className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs disabled:opacity-50"
+										>
+											<option value="de">Deutsch</option>
+											<option value="en">English</option>
+											<option value="ru">Русский</option>
+											<option value="zh">中文</option>
+										</select>
+										<div className="flex flex-wrap gap-3">
+											{(
+												[
+													['title', 'Titel'],
+													['description', 'Beschreibung'],
+													['propertyType', 'Typ'],
+													['city', 'Ort'],
+													['street', 'Straße'],
+												] as const
+											).map(([k, label]) => (
+												<label key={k} className="inline-flex items-center gap-1">
+													<input
+														type="checkbox"
+														checked={translateFields[k]}
+														disabled={!translateEnabled}
+														onChange={(e) =>
+															setTranslateFields((prev) => ({ ...prev, [k]: e.target.checked }))
+														}
+														className="h-3.5 w-3.5 rounded border-slate-300 disabled:opacity-50"
+													/>
+													<span>{label}</span>
+												</label>
+											))}
+										</div>
+									</div>
 								</div>
 							</>
 						)}
