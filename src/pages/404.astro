@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLocale, type Locale, withLocalePath } from '../i18n/locale';
+import { NotFoundRandomListings } from '../components/react/NotFoundRandomListings';
+
+const locale = getLocale(Astro.url.pathname) as Locale;
+
+const copy = {
+	de: {
+		title: '404: Diese Seite ist auf Hausbesichtigung',
+		lead: 'Die URL ist verschwunden. Aber keine Sorge: wir haben ein paar zufaellige Immobilien fuer Sie gefunden.',
+		home: 'Zur Startseite',
+		listings: 'Alle Immobilien',
+		randomTitle: 'Zufaellige Fundstuecke',
+	},
+	en: {
+		title: '404: This page went on a viewing',
+		lead: 'The URL is gone. Good news: here are a few random listings you might like.',
+		home: 'Back to home',
+		listings: 'All listings',
+		randomTitle: 'Random picks',
+	},
+	ru: {
+		title: '404: Страница ушла на просмотр',
+		lead: 'Этот адрес не найден. Зато вот несколько случайных объектов.',
+		home: 'На главную',
+		listings: 'Все объекты',
+		randomTitle: 'Случайные варианты',
+	},
+	zh: {
+		title: '404：页面去看房了',
+		lead: '这个地址不见了，不过我们给你随机挑了几套房源。',
+		home: '返回首页',
+		listings: '查看全部房源',
+		randomTitle: '随机推荐',
+	},
+} as const;
+
+const L = copy[locale];
+---
+
+<BaseLayout locale={locale} title={L.title}>
+	<div class="mx-auto max-w-7xl px-4 py-12 md:py-16">
+		<div class="glass-panel px-6 py-8 md:px-10 md:py-10">
+			<h1 class="font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">{L.title}</h1>
+			<p class="mt-3 max-w-3xl text-slate-600">{L.lead}</p>
+			<div class="mt-5 flex flex-wrap gap-3">
+				<a
+					href={withLocalePath('/', locale)}
+					class="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:border-amber-300 hover:bg-amber-50"
+				>
+					{L.home}
+				</a>
+				<a
+					href={withLocalePath('/immobilien', locale)}
+					class="inline-flex rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 transition hover:bg-amber-100"
+				>
+					{L.listings}
+				</a>
+			</div>
+		</div>
+
+		<section class="mt-10">
+			<h2 class="mb-4 text-lg font-semibold text-gray-900">{L.randomTitle}</h2>
+			<NotFoundRandomListings client:only="react" locale={locale} />
+		</section>
+	</div>
+</BaseLayout>
