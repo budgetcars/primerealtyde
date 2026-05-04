@@ -43,6 +43,8 @@ export function ListingDetailClient({
 	const [loading, setLoading] = useState(() => !skipped);
 	const [error, setError] = useState<string | null>(null);
 	const [heroImgBroken, setHeroImgBroken] = useState(false);
+	const [activeImageIndex, setActiveImageIndex] = useState(0);
+	const [zoomOpen, setZoomOpen] = useState(false);
 
 	useEffect(() => {
 		if (skipped) return;
@@ -75,7 +77,18 @@ export function ListingDetailClient({
 
 	useEffect(() => {
 		setHeroImgBroken(false);
+		setActiveImageIndex(0);
+		setZoomOpen(false);
 	}, [listing?.id]);
+
+	useEffect(() => {
+		if (!zoomOpen) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') setZoomOpen(false);
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [zoomOpen]);
 
 	if (skipped) return null;
 	if (error)
@@ -106,32 +119,60 @@ export function ListingDetailClient({
 			</p>
 		);
 
-	const firstPhoto = listing.images[0]?.trim();
+	const galleryImages = (listing.images ?? [])
+		.map((u) => (u ?? '').trim())
+		.filter(Boolean);
+	const activePhoto = galleryImages[activeImageIndex] ?? galleryImages[0] ?? '';
 	const heroFallback = unsplashListingHero(listing.id ?? listing.title ?? '');
-	const heroUrl = firstPhoto && !heroImgBroken ? firstPhoto : heroFallback;
+	const heroUrl = activePhoto && !heroImgBroken ? activePhoto : heroFallback;
 	const mapHref =
 		listing.latitude != null && listing.longitude != null
 			? `https://www.openstreetmap.org/?mlat=${listing.latitude}&mlon=${listing.longitude}#map=14/${listing.latitude}/${listing.longitude}`
 			: null;
 
-	const heroAlt = firstPhoto && !heroImgBroken ? '' : `${listing.title} – ${L.imgAltFallback}`;
+	const heroAlt = activePhoto && !heroImgBroken ? '' : `${listing.title} – ${L.imgAltFallback}`;
 	const descriptionMd = (listing.description ?? '').trim();
 
 	return (
-		<div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
+		<>
+			<div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
 			<div>
 				<div className="glass-panel-soft overflow-hidden p-1">
-					<img
-						src={heroUrl}
-						alt={heroAlt}
-						className="aspect-[4/3] w-full rounded-xl object-cover"
-						onError={() => setHeroImgBroken(true)}
-					/>
+					<button
+						type="button"
+						onClick={() => {
+							if (activePhoto && !heroImgBroken) setZoomOpen(true);
+						}}
+						className="block w-full"
+						aria-label="Bild vergrößern"
+					>
+						<img
+							src={heroUrl}
+							alt={heroAlt}
+							className="aspect-[4/3] w-full rounded-xl object-cover transition-transform hover:scale-[1.01]"
+							onError={() => setHeroImgBroken(true)}
+						/>
+					</button>
 				</div>
-				{listing.images.length > 1 && (
+				{galleryImages.length > 1 && (
 					<div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
-						{listing.images.slice(1, 9).map((url) => (
-							<img key={url} src={url} alt="" className="aspect-square rounded-lg border border-white/50 object-cover shadow-sm" loading="lazy" />
+						{galleryImages.slice(0, 9).map((url, idx) => (
+							<button
+								key={`${url}-${idx}`}
+								type="button"
+								onClick={() => {
+									setActiveImageIndex(idx);
+									setHeroImgBroken(false);
+								}}
+								className={`overflow-hidden rounded-lg border shadow-sm transition ${
+									idx === activeImageIndex
+										? 'border-amber-400 ring-2 ring-amber-300/60'
+										: 'border-white/50 hover:border-amber-200/90'
+								}`}
+								aria-label={`Bild ${idx + 1} anzeigen`}
+							>
+								<img src={url} alt="" className="aspect-square w-full object-cover" loading="lazy" />
+							</button>
 						))}
 					</div>
 				)}
@@ -240,6 +281,20 @@ export function ListingDetailClient({
 					{L.backToListings}
 				</a>
 			</div>
-		</div>
+			</div>
+			{zoomOpen ? (
+				<div
+					className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+					onClick={() => setZoomOpen(false)}
+				>
+					<img
+						src={activePhoto || heroUrl}
+						alt={listing.title}
+						className="max-h-[92vh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
+						onClick={(e) => e.stopPropagation()}
+					/>
+				</div>
+			) : null}
+		</>
 	);
 }
