@@ -1,4 +1,5 @@
 import type { ListingInput } from '../types';
+import { withListingBrowseIndex } from '../listingBrowseIndex';
 
 function text(el: Element | null | undefined): string {
 	return el?.textContent?.trim().replace(/\s+/g, ' ') ?? '';
@@ -46,13 +47,32 @@ function pickGeo(immobilie: Element): { zip: string; city: string; street: strin
 	};
 }
 
-function pickPrice(immobilie: Element): number | null {
+function pickPricing(immobilie: Element): {
+	priceEuro: number | null;
+	pricePerMonthEuro: number | null;
+	listingType?: string;
+} {
 	const preise = immobilie.getElementsByTagName('preise')[0];
-	if (!preise) return null;
+	if (!preise) return { priceEuro: null, pricePerMonthEuro: null };
 	const kauf = text(preise.getElementsByTagName('kaufpreis')[0]);
-	if (kauf) return parseNum(kauf);
+	if (kauf) {
+		const v = parseNum(kauf);
+		return { priceEuro: v, pricePerMonthEuro: null };
+	}
 	const brutto = text(preise.getElementsByTagName('bruttokaufpreis')[0]);
-	return brutto ? parseNum(brutto) : null;
+	if (brutto) {
+		const v = parseNum(brutto);
+		return { priceEuro: v, pricePerMonthEuro: null };
+	}
+	const miet =
+		text(preise.getElementsByTagName('kaltmiete')[0]) ||
+		text(preise.getElementsByTagName('nettokaltmiete')[0]) ||
+		text(preise.getElementsByTagName('warmmiete')[0]);
+	if (miet) {
+		const v = parseNum(miet);
+		return { priceEuro: null, pricePerMonthEuro: v, listingType: 'rent' };
+	}
+	return { priceEuro: null, pricePerMonthEuro: null };
 }
 
 function pickTitleDesc(immobilie: Element): { title: string; description: string } {
@@ -121,21 +141,26 @@ export function parseOpenImmoXml(xmlString: string): ListingInput[] {
 		const { wohn, rooms } = pickFlaechen(imm);
 		const images = collectImageUrls(imm);
 		const extId = externalIdFrom(imm);
+		const { priceEuro, pricePerMonthEuro, listingType } = pickPricing(imm);
 
-		results.push({
-			title,
-			description,
-			priceEuro: pickPrice(imm),
-			livingSpaceSqm: wohn,
-			rooms,
-			propertyType: pickObjektart(imm),
-			city: geo.city,
-			zip: geo.zip,
-			street: geo.street,
-			images,
-			source: 'xml',
-			externalId: extId,
-		});
+		results.push(
+			withListingBrowseIndex({
+				title,
+				description,
+				priceEuro,
+				pricePerMonthEuro: pricePerMonthEuro ?? undefined,
+				livingSpaceSqm: wohn,
+				rooms,
+				propertyType: pickObjektart(imm),
+				city: geo.city,
+				zip: geo.zip,
+				street: geo.street,
+				images,
+				source: 'xml',
+				externalId: extId,
+				...(listingType ? { listingType } : {}),
+			} as Record<string, unknown>) as ListingInput,
+		);
 	}
 
 	return results;

@@ -17,19 +17,45 @@ import {
 	updateDoc,
 	writeBatch,
 } from 'firebase/firestore';
+import { parseListingsCsv } from '../../lib/csv/parseListingsCsv';
+import { deleteXmlListingsNotInExternalIdSet } from '../../lib/firestore/deleteMissingByExternalId';
+import { mapExternalIdsToFirestoreDocIds } from '../../lib/firestore/externalIdLookup';
+import { detectImportFormat } from '../../lib/import/detectImportFormat';
+import { listingInputPassesImportFilters, type ImportRowPresetFilters } from '../../lib/import/importRowFilters';
+import { feedUrlSuggestsNorthCyprus } from '../../lib/listingsQuery';
+import { withListingBrowseIndex } from '../../lib/listingBrowseIndex';
 import { parseOpenImmoXml } from '../../lib/xml/parseOpenImmo';
-import { detectXmlRootTag, parseAdriomXml } from '../../lib/xml/parseAdriom';
+import { parseAdriomXml } from '../../lib/xml/parseAdriom';
 import { stableOpenImmoStagingKey, validateListingXmlImport } from '../../lib/xml/listingXmlImportValidation';
 import type { Listing, ListingInput, ListingSource } from '../../lib/types';
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from '../../lib/firebase/client';
+import { fetchXmlFeedViaProxy } from '../../lib/firebase/fetchXmlFeedProxy';
 import {
 	XmlImportReviewDialog,
 	type XmlImportStagingRowAdriom,
 	type XmlImportStagingRowOpenImmo,
 	type XmlStagingState,
 } from './XmlImportReviewDialog';
+import { GenericXmlMappingDialog } from './GenericXmlMappingDialog';
+import {
+	exportListingsToAdriomListingsXml,
+	exportListingsToCsv,
+	listingMatchesExportFilter,
+	type ListingExportFilter,
+} from '../../lib/xml/exportListingsFeed';
+import { formatListingPricePrimary } from '../../lib/listingPriceDisplay';
 
 const LISTINGS = 'listings';
+
+function triggerBrowserDownload(contents: string, filename: string, mime: string) {
+	const blob = new Blob([contents], { type: mime });
+	const u = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = u;
+	a.download = filename;
+	a.click();
+	setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
 
 function firebaseAuthLoginMessage(code: string): string {
 	const map: Record<string, string> = {
@@ -63,15 +89,6 @@ export type AdminAppProps = {
 
 function inputCls() {
 	return 'mt-1 w-full rounded-xl border border-slate-200/90 bg-white/70 px-4 py-3 text-gray-900 shadow-sm outline-none backdrop-blur-sm transition placeholder:text-slate-400 focus:border-amber-300 focus:ring-2 focus:ring-amber-200/50';
-}
-
-function formatPriceEUR(euro: number | null): string {
-	if (euro == null) return 'Auf Anfrage';
-	return new Intl.NumberFormat('de-DE', {
-		style: 'currency',
-		currency: 'EUR',
-		maximumFractionDigits: 0,
-	}).format(euro);
 }
 
 /** Firestore verwirft Felder mit `undefined` */
@@ -124,6 +141,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
 	const [priceEuro, setPriceEuro] = useState('');
+	const [pricePerMonthEuro, setPricePerMonthEuro] = useState('');
 	const [livingSpaceSqm, setLivingSpaceSqm] = useState('');
 	const [rooms, setRooms] = useState('');
 	const [propertyType, setPropertyType] = useState('Ferienwohnung');
@@ -144,6 +162,20 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [xmlStagingLoading, setXmlStagingLoading] = useState(false);
 	const [xmlPrepareProgress, setXmlPrepareProgress] = useState<{ done: number; total: number } | null>(null);
 	const xmlPrepareCancelledRef = useRef(false);
+	const [importFilterMinPrice, setImportFilterMinPrice] = useState('');
+	const [importFilterMaxPrice, setImportFilterMaxPrice] = useState('');
+	const [importFilterCity, setImportFilterCity] = useState('');
+	const [importFilterCountry, setImportFilterCountry] = useState('');
+	const [importFilterFeaturedOnly, setImportFilterFeaturedOnly] = useState(false);
+	const [importFilterRequireImages, setImportFilterRequireImages] = useState(false);
+	const [csvDocIdColumn, setCsvDocIdColumn] = useState(false);
+	const [openImmoMergeByExternalId, setOpenImmoMergeByExternalId] = useState(false);
+	const [importDeleteMissingByExternalId, setImportDeleteMissingByExternalId] = useState(false);
+	const [importDeleteMissingFeedScope, setImportDeleteMissingFeedScope] = useState('');
+	const [importFeedLabel, setImportFeedLabel] = useState('');
+	const [genericXmlMapOpen, setGenericXmlMapOpen] = useState(false);
+	const [xmlExportPreset, setXmlExportPreset] = useState<'all' | 'featured' | 'manual' | 'adriom' | 'xml'>('all');
+	const [xmlExportCountry, setXmlExportCountry] = useState('');
 
 	const loadInventory = useCallback(async () => {
 		if (skipped) return;
@@ -185,6 +217,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		setTitle('');
 		setDescription('');
 		setPriceEuro('');
+		setPricePerMonthEuro('');
 		setLivingSpaceSqm('');
 		setRooms('');
 		setPropertyType('Ferienwohnung');
@@ -204,6 +237,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		setTitle(l.title ?? '');
 		setDescription(l.description ?? '');
 		setPriceEuro(l.priceEuro != null ? String(l.priceEuro) : '');
+		setPricePerMonthEuro(l.pricePerMonthEuro != null ? String(l.pricePerMonthEuro) : '');
 		setLivingSpaceSqm(l.livingSpaceSqm != null ? String(l.livingSpaceSqm) : '');
 		setRooms(l.rooms != null ? String(l.rooms) : '');
 		setPropertyType(l.propertyType || 'Immobilie');
@@ -230,6 +264,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			title: title.trim() || 'Ohne Titel',
 			description: description.trim(),
 			priceEuro: priceEuro.trim() ? Number(priceEuro.replace(',', '.')) : null,
+			pricePerMonthEuro: pricePerMonthEuro.trim() ? Number(pricePerMonthEuro.replace(',', '.')) : null,
 			livingSpaceSqm: livingSpaceSqm.trim() ? Number(livingSpaceSqm.replace(',', '.')) : null,
 			rooms: rooms.trim() ? Number(rooms.replace(',', '.')) : null,
 			propertyType: propertyType.trim() || 'Immobilie',
@@ -272,7 +307,12 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		setStatus(null);
 		setBusy(true);
 		try {
-			const payload = buildPayload();
+			const payloadBase = buildPayload();
+			const existing = editingId ? inventory.find((r) => r.id === editingId) : undefined;
+			const payload = withListingBrowseIndex({
+				...payloadBase,
+				createdAt: existing?.createdAt,
+			} as Record<string, unknown>);
 			const db = getDb();
 
 			if (editingId) {
@@ -281,7 +321,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				setStatus('Objekt wurde aktualisiert.');
 			} else {
 				await addDoc(collection(db, LISTINGS), {
-					...payload,
+					...omitUndefinedShallow(payload as unknown as Record<string, unknown>),
 					createdAt: serverTimestamp(),
 				});
 				setStatus('Objekt wurde gespeichert.');
@@ -327,18 +367,39 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	async function loadXmlFromUrl() {
 		setStatus(null);
 		setBusy(true);
+		const url = xmlFeedUrl.trim();
 		try {
-			const res = await fetch(xmlFeedUrl.trim(), { mode: 'cors' });
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const text = await res.text();
+			let text: string;
+			let viaProxy = false;
+			try {
+				const res = await fetch(url, { mode: 'cors' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				text = await res.text();
+			} catch (directErr: unknown) {
+				if (!user) throw directErr;
+				try {
+					const proxied = await fetchXmlFeedViaProxy(url);
+					text = proxied.body;
+					viaProxy = true;
+				} catch (proxyErr: unknown) {
+					const d = directErr instanceof Error ? directErr.message : String(directErr);
+					const p = proxyErr instanceof Error ? proxyErr.message : String(proxyErr);
+					throw new Error(`Direktabruf: ${d} — Feed-Proxy: ${p}`);
+				}
+			}
 			setXmlText(text);
+			const via = viaProxy ? ' (serverseitig, ohne CORS)' : '';
 			setStatus(
-				`Daten geladen (${text.length.toLocaleString('de-DE')} Zeichen). Anschließend „Analysieren & Vorschau“ ausführen.`,
+				`Daten geladen${via} (${text.length.toLocaleString('de-DE')} Zeichen). Anschließend „Analysieren & Vorschau“ ausführen.`,
 			);
 		} catch (e: unknown) {
 			const msg = e instanceof Error ? e.message : 'Laden fehlgeschlagen';
+			const hint =
+				user && msg.toLowerCase().includes('failed to fetch')
+					? ' Falls der Feed-Proxy noch nicht deployed ist: im Projektordner `firebase deploy --only functions` (Blaze-Tarif für externe Abrufe). '
+					: ' ';
 			setStatus(
-				`${msg} – bei Bedarf Inhalt manuell einfügen oder eine Export-Datei von Ihrem Rechner wählen.`,
+				`${msg}.${hint}Alternativ: Inhalt manuell einfügen oder XML-Datei vom Rechner wählen.`,
 			);
 		} finally {
 			setBusy(false);
@@ -356,6 +417,83 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 
 	const XML_PREPARE_CHUNK = 80;
 
+	function currentImportRowFilters(): ImportRowPresetFilters {
+		return {
+			minPriceEuro: parseOptionalNumber(importFilterMinPrice),
+			maxPriceEuro: parseOptionalNumber(importFilterMaxPrice),
+			cityContains: importFilterCity,
+			countryContains: importFilterCountry,
+			featuredOnly: importFilterFeaturedOnly,
+			requireImages: importFilterRequireImages,
+		};
+	}
+
+	function handleGenericXmlMapped(listings: ListingInput[]) {
+		setGenericXmlMapOpen(false);
+		xmlPrepareCancelledRef.current = false;
+		setXmlStaging(null);
+		setXmlDialogOpen(true);
+		setXmlStagingLoading(true);
+		setXmlPrepareProgress(null);
+		void (async () => {
+			await yieldToUi();
+			try {
+				const rowFilter = currentImportRowFilters();
+				const filtered = listings.filter((p) => listingInputPassesImportFilters(p, rowFilter));
+				if (!filtered.length) {
+					setStatus('Nach Import-Filtern blieben keine Einträge aus dem Feld-Mapping übrig.');
+					setXmlDialogOpen(false);
+					setXmlStagingLoading(false);
+					return;
+				}
+
+				const rows: XmlImportStagingRowOpenImmo[] = [];
+				for (let start = 0; start < filtered.length; start += XML_PREPARE_CHUNK) {
+					if (xmlPrepareCancelledRef.current) {
+						setXmlStagingLoading(false);
+						setXmlPrepareProgress(null);
+						return;
+					}
+					const end = Math.min(start + XML_PREPARE_CHUNK, filtered.length);
+					for (let idx = start; idx < end; idx++) {
+						const listing = filtered[idx]!;
+						const v = validateListingXmlImport(listing, { kind: 'openimmo', rowIndex: idx });
+						rows.push({
+							format: 'openimmo' as const,
+							rowKey: `generic-xml-${stableOpenImmoStagingKey(idx, listing)}`,
+							checked: v.errors.length === 0,
+							errors: v.errors,
+							warnings: v.warnings,
+							listing,
+						});
+					}
+					setXmlPrepareProgress({ done: end, total: filtered.length });
+					await new Promise<void>((resolve) => {
+						queueMicrotask(() => setTimeout(resolve, 0));
+					});
+				}
+
+				if (xmlPrepareCancelledRef.current) {
+					setXmlStagingLoading(false);
+					setXmlPrepareProgress(null);
+					return;
+				}
+
+				setXmlStaging({ format: 'openimmo', source: 'generic-xml', rows });
+				const withErrors = rows.filter((r) => r.errors.length > 0).length;
+				setStatus(
+					`Vorschau (eigenes XML): ${rows.length.toLocaleString('de-DE')} Datensatz/Datensätze${withErrors ? ` — ${withErrors} mit Meldungen` : ''}.`,
+				);
+			} catch (e: unknown) {
+				setStatus(e instanceof Error ? e.message : 'Aufbereitung nach Mapping fehlgeschlagen.');
+				setXmlDialogOpen(false);
+			} finally {
+				setXmlStagingLoading(false);
+				setXmlPrepareProgress(null);
+			}
+		})();
+	}
+
 	function analyzeXmlStaging() {
 		setStatus(null);
 		const raw = xmlText.trim();
@@ -365,6 +503,14 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		}
 
 		xmlPrepareCancelledRef.current = false;
+
+		const kindEarly = detectImportFormat(raw);
+		if (kindEarly === 'unknown' && raw.trimStart().startsWith('<')) {
+			setGenericXmlMapOpen(true);
+			setStatus('Eigenes XML: Feldzuordnung öffnen, Datensatz-Knoten wählen und Felder zuordnen.');
+			return;
+		}
+
 		setXmlStaging(null);
 		setXmlDialogOpen(true);
 		setXmlStagingLoading(true);
@@ -373,11 +519,14 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		void (async () => {
 			await yieldToUi();
 			try {
-				const kind = detectXmlRootTag(raw);
+				const kind = detectImportFormat(raw);
 				const langs = langPref === 'de' ? ['de', 'en', 'sr', 'ru'] : ['en', 'de', 'sr', 'ru'];
+				const rowFilter = currentImportRowFilters();
 
 				if (kind === 'unknown') {
-					setStatus('Unbekanntes Format – der Inhalt konnte nicht verarbeitet werden.');
+					setStatus(
+						'Kein gültiges tabellarisches Format – erwarte eine CSV mit Kopfzeile wie beim Export oder ein erkanntes/Wurzel-XML.',
+					);
 					setXmlDialogOpen(false);
 					setXmlStagingLoading(false);
 					return;
@@ -395,16 +544,24 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						return;
 					}
 
+					const itemsFiltered = items.filter((it) => listingInputPassesImportFilters(it, rowFilter));
+					if (!itemsFiltered.length) {
+						setStatus('Nach Import-Filtern blieben keine Adriom-Einträge übrig.');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
 					const rows: XmlImportStagingRowAdriom[] = [];
-					for (let start = 0; start < items.length; start += XML_PREPARE_CHUNK) {
+					for (let start = 0; start < itemsFiltered.length; start += XML_PREPARE_CHUNK) {
 						if (xmlPrepareCancelledRef.current) {
 							setXmlStagingLoading(false);
 							setXmlPrepareProgress(null);
 							return;
 						}
-						const end = Math.min(start + XML_PREPARE_CHUNK, items.length);
+						const end = Math.min(start + XML_PREPARE_CHUNK, itemsFiltered.length);
 						for (let idx = start; idx < end; idx++) {
-							const it = items[idx]!;
+							const it = itemsFiltered[idx]!;
 							const v = validateListingXmlImport(it, { kind: 'adriom', docId: it.firestoreDocumentId });
 							rows.push({
 								format: 'adriom' as const,
@@ -415,7 +572,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 								payload: it,
 							});
 						}
-						setXmlPrepareProgress({ done: end, total: items.length });
+						setXmlPrepareProgress({ done: end, total: itemsFiltered.length });
 						await new Promise<void>((resolve) => {
 							queueMicrotask(() => setTimeout(resolve, 0));
 						});
@@ -430,7 +587,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 					setXmlStaging({ format: 'adriom', feedMeta, rows });
 					const withErrors = rows.filter((r) => r.errors.length > 0).length;
 					setStatus(
-						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge${withErrors ? ` (${withErrors} mit kritischen Meldungen)` : ''}. Blättern und Auswahl treffen.`,
+						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge (nach Filter von ${items.length.toLocaleString('de-DE')})${withErrors ? ` — ${withErrors} mit kritischen Meldungen` : ''}.`,
 					);
 				} else if (kind === 'openimmo') {
 					const parsed = parseOpenImmoXml(raw);
@@ -442,16 +599,24 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						return;
 					}
 
+					const filtered = parsed.filter((p) => listingInputPassesImportFilters(p, rowFilter));
+					if (!filtered.length) {
+						setStatus('Nach Import-Filtern blieben keine OpenImmo-Einträge übrig.');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
 					const rows: XmlImportStagingRowOpenImmo[] = [];
-					for (let start = 0; start < parsed.length; start += XML_PREPARE_CHUNK) {
+					for (let start = 0; start < filtered.length; start += XML_PREPARE_CHUNK) {
 						if (xmlPrepareCancelledRef.current) {
 							setXmlStagingLoading(false);
 							setXmlPrepareProgress(null);
 							return;
 						}
-						const end = Math.min(start + XML_PREPARE_CHUNK, parsed.length);
+						const end = Math.min(start + XML_PREPARE_CHUNK, filtered.length);
 						for (let idx = start; idx < end; idx++) {
-							const listing = parsed[idx]!;
+							const listing = filtered[idx]!;
 							const v = validateListingXmlImport(listing, { kind: 'openimmo', rowIndex: idx });
 							rows.push({
 								format: 'openimmo' as const,
@@ -462,7 +627,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 								listing,
 							});
 						}
-						setXmlPrepareProgress({ done: end, total: parsed.length });
+						setXmlPrepareProgress({ done: end, total: filtered.length });
 						await new Promise<void>((resolve) => {
 							queueMicrotask(() => setTimeout(resolve, 0));
 						});
@@ -474,11 +639,137 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						return;
 					}
 
-					setXmlStaging({ format: 'openimmo', rows });
+					setXmlStaging({ format: 'openimmo', source: 'openimmo-xml', rows });
 					const withErrors = rows.filter((r) => r.errors.length > 0).length;
 					setStatus(
-						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge${withErrors ? ` (${withErrors} mit kritischen Meldungen)` : ''}. Blättern und Auswahl treffen.`,
+						`Vorschau: ${rows.length.toLocaleString('de-DE')} Eintrag/Einträge (nach Filter von ${parsed.length.toLocaleString('de-DE')})${withErrors ? ` — ${withErrors} mit kritischen Meldungen` : ''}.`,
 					);
+				} else if (kind === 'csv') {
+					const csvRows = parseListingsCsv(raw, { docIdColumn: csvDocIdColumn ? 'id' : 'none' });
+					if (xmlPrepareCancelledRef.current) return;
+					if (!csvRows.length) {
+						setStatus('CSV: keine Datenzeilen (erste Zeile = Spaltennamen, siehe Export-CSV).');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
+					const itemsFiltered = csvRows.filter((it) => listingInputPassesImportFilters(it, rowFilter));
+					if (!itemsFiltered.length) {
+						setStatus('Nach Import-Filtern blieben keine CSV-Zeilen übrig.');
+						setXmlDialogOpen(false);
+						setXmlStagingLoading(false);
+						return;
+					}
+
+					const nowIso = new Date().toISOString();
+					if (csvDocIdColumn) {
+						const rows: XmlImportStagingRowAdriom[] = [];
+						for (let start = 0; start < itemsFiltered.length; start += XML_PREPARE_CHUNK) {
+							if (xmlPrepareCancelledRef.current) {
+								setXmlStagingLoading(false);
+								setXmlPrepareProgress(null);
+								return;
+							}
+							const end = Math.min(start + XML_PREPARE_CHUNK, itemsFiltered.length);
+							for (let idx = start; idx < end; idx++) {
+								const row = itemsFiltered[idx]!;
+								const docId = row.firestoreDocumentId?.trim() ?? '';
+								if (!docId) {
+									const v = validateListingXmlImport(row, {
+										kind: 'adriom',
+										docId: '',
+									});
+									const errCsv = [
+										'CSV: Bei aktivierter Option „Spalte id = Firestore‑ID“ muss „id“ je Zeile gefüllt sein.',
+										...v.errors,
+									];
+									rows.push({
+										format: 'adriom' as const,
+										rowKey: `csv-${idx}-no-doc`,
+										checked: false,
+										errors: errCsv,
+										warnings: v.warnings,
+										payload: { ...row, firestoreDocumentId: '__MISSING_ID__', title: row.title || 'Ohne Zeilen-ID' },
+									});
+									continue;
+								}
+								const { firestoreDocumentId: _omit, ...rest } = row;
+								const payload: ListingInput & { firestoreDocumentId: string } = {
+									...rest,
+									firestoreDocumentId: docId,
+								};
+								const v = validateListingXmlImport(payload, { kind: 'adriom', docId });
+								rows.push({
+									format: 'adriom' as const,
+									rowKey: `csv-${idx}-${docId}`,
+									checked: v.errors.length === 0,
+									errors: v.errors,
+									warnings: v.warnings,
+									payload,
+								});
+							}
+							setXmlPrepareProgress({ done: end, total: itemsFiltered.length });
+							await new Promise<void>((resolve) => {
+								queueMicrotask(() => setTimeout(resolve, 0));
+							});
+						}
+						if (xmlPrepareCancelledRef.current) {
+							setXmlStagingLoading(false);
+							setXmlPrepareProgress(null);
+							return;
+						}
+						setXmlStaging({
+							format: 'adriom',
+							feedMeta: {
+								source: 'csv-import',
+								generated: nowIso,
+								count: String(rows.length),
+							},
+							rows,
+						});
+						const withErrors = rows.filter((r) => r.errors.length > 0).length;
+						setStatus(
+							`Vorschau (CSV): ${rows.length.toLocaleString('de-DE')} Zeilen${withErrors ? ` — ${withErrors} mit Meldungen` : ''}.`,
+						);
+					} else {
+						const rows: XmlImportStagingRowOpenImmo[] = [];
+						for (let start = 0; start < itemsFiltered.length; start += XML_PREPARE_CHUNK) {
+							if (xmlPrepareCancelledRef.current) {
+								setXmlStagingLoading(false);
+								setXmlPrepareProgress(null);
+								return;
+							}
+							const end = Math.min(start + XML_PREPARE_CHUNK, itemsFiltered.length);
+							for (let idx = start; idx < end; idx++) {
+								const row = itemsFiltered[idx]!;
+								const { firestoreDocumentId: _fd, ...listing } = row;
+								const v = validateListingXmlImport(listing, { kind: 'openimmo', rowIndex: idx });
+								rows.push({
+									format: 'openimmo' as const,
+									rowKey: stableOpenImmoStagingKey(idx, listing),
+									checked: v.errors.length === 0,
+									errors: v.errors,
+									warnings: v.warnings,
+									listing,
+								});
+							}
+							setXmlPrepareProgress({ done: end, total: itemsFiltered.length });
+							await new Promise<void>((resolve) => {
+								queueMicrotask(() => setTimeout(resolve, 0));
+							});
+						}
+						if (xmlPrepareCancelledRef.current) {
+							setXmlStagingLoading(false);
+							setXmlPrepareProgress(null);
+							return;
+						}
+						setXmlStaging({ format: 'openimmo', source: 'csv', rows });
+						const withErrors = rows.filter((r) => r.errors.length > 0).length;
+						setStatus(
+							`Vorschau (CSV): ${rows.length.toLocaleString('de-DE')} Zeilen${withErrors ? ` — ${withErrors} mit Meldungen` : ''}.`,
+						);
+					}
 				}
 			} catch (e: unknown) {
 				setStatus(e instanceof Error ? e.message : 'Analyse fehlgeschlagen');
@@ -488,6 +779,58 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				setXmlPrepareProgress(null);
 			}
 		})();
+	}
+
+	function presetToExportFilter(preset: typeof xmlExportPreset): ListingExportFilter {
+		switch (preset) {
+			case 'featured':
+				return { kind: 'featured' };
+			case 'manual':
+				return { kind: 'source', value: 'manual' };
+			case 'adriom':
+				return { kind: 'source', value: 'adriom' };
+			case 'xml':
+				return { kind: 'source', value: 'xml' };
+			default:
+				return { kind: 'all' };
+		}
+	}
+
+	function getFilteredListingsForExport(): Listing[] {
+		const base = presetToExportFilter(xmlExportPreset);
+		let rows = inventory.filter((r) => listingMatchesExportFilter(r, base));
+		const needle = xmlExportCountry.trim();
+		if (needle)
+			rows = rows.filter((r) => listingMatchesExportFilter(r, { kind: 'countryContains', needle }));
+		return rows.filter((r) => r.id?.trim());
+	}
+
+	function exportListingsXmlFile() {
+		const rows = getFilteredListingsForExport();
+		if (!rows.length) {
+			setStatus('Export: keine passenden Objekte (Filter oder fehlende Firestore-ID).');
+			return;
+		}
+		const titleLang = langPref === 'en' ? 'en' : 'de';
+		const xml = exportListingsToAdriomListingsXml(rows, {
+			feedSource: 'prime-realty-firestore-export',
+			titleLang,
+		});
+		const d = new Date().toISOString().slice(0, 10);
+		triggerBrowserDownload(xml, `prime-realty-export-${d}.xml`, 'application/xml;charset=utf-8');
+		setStatus(`Export: ${rows.length} Objekt(e) als Adriom‑XML heruntergeladen.`);
+	}
+
+	function exportListingsCsvFile() {
+		const rows = getFilteredListingsForExport();
+		if (!rows.length) {
+			setStatus('Export: keine passenden Objekte (Filter oder fehlende Firestore-ID).');
+			return;
+		}
+		const csv = exportListingsToCsv(rows);
+		const d = new Date().toISOString().slice(0, 10);
+		triggerBrowserDownload(csv, `prime-realty-export-${d}.csv`, 'text/csv;charset=utf-8');
+		setStatus(`Export: ${rows.length} Zeile(n) als CSV heruntergeladen.`);
 	}
 
 	function toggleXmlStagingRow(rowKey: string, checked: boolean) {
@@ -519,9 +862,15 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		let adSlice: (ListingInput & { firestoreDocumentId: string })[] | null = null;
 		let openImmoListings: ListingInput[] | null = null;
 		if (xmlStaging.format === 'adriom') {
-			adSlice = xmlStaging.rows.filter((r) => r.checked).map((r) => r.payload);
+			adSlice = xmlStaging.rows
+				.filter((r) => r.checked)
+				.map((r) => r.payload)
+				.filter((it) => {
+					const id = it.firestoreDocumentId?.trim();
+					return Boolean(id && !id.startsWith('__'));
+				});
 			if (!adSlice.length) {
-				setStatus('Keine Objekte ausgewählt.');
+				setStatus('Keine Objekte ausgewählt (oder nur ungültige/Platzhalter-Dokument-IDs).');
 				return;
 			}
 		} else {
@@ -538,6 +887,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			const db = getDb();
 			if (adSlice && xmlStaging.format === 'adriom') {
 				const chunkSize = 400;
+				const feedUrlTrimAd = xmlFeedUrl.trim();
 				let upserted = 0;
 				for (let i = 0; i < adSlice.length; i += chunkSize) {
 					const slice = adSlice.slice(i, i + chunkSize);
@@ -548,10 +898,12 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						const row = slice[j]!;
 						const exists = snaps[j]!.exists();
 						const { firestoreDocumentId: _listingDocId, ...rest } = row;
+						const merged = withListingBrowseIndex(rest as Record<string, unknown>);
 						batch.set(
 							refs[j]!,
 							{
-								...rest,
+								...merged,
+								...(feedUrlTrimAd ? { xmlFeedSourceUrl: feedUrlTrimAd } : {}),
 								syncedAt: serverTimestamp(),
 								...(exists ? {} : { createdAt: serverTimestamp() }),
 							},
@@ -568,16 +920,70 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				);
 			} else if (openImmoListings && xmlStaging.format === 'openimmo') {
 				const chunkSize = 450;
+				const feedLabelNorm = importFeedLabel.trim();
+				const feedUrlTrim = xmlFeedUrl.trim();
+				const northCyprusFromFeedUrl = feedUrlSuggestsNorthCyprus(feedUrlTrim);
+				const externalIds = openImmoListings
+					.map((item) => item.externalId?.trim() ?? '')
+					.filter((x) => x.length > 0);
+				const externalIdToDoc =
+					openImmoMergeByExternalId && externalIds.length > 0
+						? await mapExternalIdsToFirestoreDocIds(db, LISTINGS, externalIds)
+						: new Map<string, string>();
+				let updated = 0;
+				let inserted = 0;
 				for (let i = 0; i < openImmoListings.length; i += chunkSize) {
 					const chunk = openImmoListings.slice(i, i + chunkSize);
 					const batch = writeBatch(db);
 					for (const item of chunk) {
-						const ref = doc(collection(db, LISTINGS));
-						batch.set(ref, { ...item, createdAt: serverTimestamp() });
+						const ext = item.externalId?.trim();
+						const existingFsId =
+							openImmoMergeByExternalId && ext ? (externalIdToDoc.get(ext) ?? null) : null;
+						const ref = existingFsId ? doc(db, LISTINGS, existingFsId) : doc(collection(db, LISTINGS));
+						if (existingFsId) updated++;
+						else inserted++;
+						const rowForIndex = {
+							...item,
+							...(feedLabelNorm ? { xmlFeedSource: feedLabelNorm } : {}),
+							...(feedUrlTrim ? { xmlFeedSourceUrl: feedUrlTrim } : {}),
+							...(northCyprusFromFeedUrl ? { country: 'Northern Cyprus' } : {}),
+						};
+						const merged = withListingBrowseIndex(rowForIndex as Record<string, unknown>);
+						batch.set(
+							ref,
+							{
+								...merged,
+								syncedAt: serverTimestamp(),
+								...(existingFsId ? {} : { createdAt: serverTimestamp() }),
+							},
+							{ merge: true },
+						);
 					}
 					await batch.commit();
 				}
-				setStatus(`${openImmoListings.length} Objekt(e) übernommen (neue Einträge).`);
+				let statusMsg =
+					openImmoMergeByExternalId
+						? `${openImmoListings.length} übernommen (${updated} per „externalId“ aktualisiert, ${inserted} neu angelegt).`
+						: `${openImmoListings.length} Objekt(e) übernommen (neue Einträge).`;
+
+				if (importDeleteMissingByExternalId && openImmoMergeByExternalId) {
+					const keepIds = new Set(
+						openImmoListings.map((li) => li.externalId?.trim() ?? '').filter((x) => x.length > 0),
+					);
+					const everyHasId = openImmoListings.every((li) => Boolean(li.externalId?.trim()));
+					if (!everyHasId || keepIds.size !== openImmoListings.length) {
+						statusMsg +=
+							' „Fehlende löschen“ übersprungen — jede Zeile braucht eine eindeutige externalId ohne Duplikate.';
+					} else {
+						const deleted = await deleteXmlListingsNotInExternalIdSet(db, LISTINGS, keepIds, {
+							scopeSubstring: importDeleteMissingFeedScope.trim() || undefined,
+						});
+						if (deleted > 0)
+							statusMsg += ` ${deleted.toLocaleString('de-DE')} weiterer Eintrag/Einträge gelöscht (nicht mehr im Import).`;
+					}
+				}
+
+				setStatus(statusMsg);
 				setXmlText('');
 			}
 			setXmlDialogOpen(false);
@@ -784,7 +1190,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 												<td className="hidden px-2 py-3 text-slate-700 sm:table-cell">
 													{[row.country, row.city, row.zip].filter(Boolean).join(' · ') || '—'}
 												</td>
-												<td className="whitespace-nowrap px-2 py-3 font-medium text-slate-800">{formatPriceEUR(row.priceEuro)}</td>
+												<td className="whitespace-nowrap px-2 py-3 font-medium text-slate-800">{formatListingPricePrimary(row, 'de')}</td>
 												<td className="max-w-[7rem] truncate px-2 py-3 capitalize text-slate-600">{row.source ?? '—'}</td>
 												<td className="space-y-1 px-4 py-3 text-right">
 													<div className="flex flex-wrap justify-end gap-2">
@@ -881,6 +1287,16 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 								<input value={priceEuro} onChange={(e) => setPriceEuro(e.target.value)} className={inputCls()} placeholder="z. B. 450000" />
 							</label>
 							<label className="block text-sm font-medium text-slate-700">
+								Mietpreis / Monat (EUR){' '}
+								<span className="font-normal text-slate-500">(bei Mietobjekten; optional)</span>
+								<input
+									value={pricePerMonthEuro}
+									onChange={(e) => setPricePerMonthEuro(e.target.value)}
+									className={inputCls()}
+									placeholder="z. B. 1200"
+								/>
+							</label>
+							<label className="block text-sm font-medium text-slate-700">
 								Objektart
 								<input value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputCls()} />
 							</label>
@@ -943,6 +1359,243 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 
 			{tab === 'xml' ? (
 				<div className="grid max-w-4xl gap-4">
+					<div className="glass-panel-soft space-y-4 p-5">
+						<h3 className="text-base font-semibold text-gray-900">Export (Bestand → Datei)</h3>
+						<p className="text-xs leading-relaxed text-slate-600">
+							Ergänzt den Import: den Firestore‑Bestand gefiltert als{' '}
+							<strong className="text-gray-900">Adriom‑kompatibles XML</strong> (wieder über „Analysieren &amp;
+							Vorschau“ importierbar) oder als <strong className="text-gray-900">CSV</strong> — entspricht in etwa
+							„Export nach CSV/XML“ bei&nbsp;
+							<a
+								className="font-medium text-amber-900 underline decoration-amber-300/70 underline-offset-2 hover:text-amber-950"
+								href="https://www.wpallimport.com/upgrade-to-wp-all-export-pro/"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								WP All Export Pro
+							</a>
+							, hier ohne WordPress.
+						</p>
+						<div className="flex flex-wrap items-end gap-4">
+							<label className="block text-sm font-medium text-slate-700">
+								Export-Filter
+								<select
+									value={xmlExportPreset}
+									onChange={(e) => setXmlExportPreset(e.target.value as typeof xmlExportPreset)}
+									className={`${inputCls()} mt-1 !py-2 w-full min-w-[14rem]`}
+								>
+									<option value="all">Alle Objekte</option>
+									<option value="featured">Nur Featured</option>
+									<option value="manual">Quelle: manuell</option>
+									<option value="adriom">Quelle: Adriom</option>
+									<option value="xml">Quelle: XML (legacy)</option>
+								</select>
+							</label>
+							<label className="block min-w-[12rem] flex-1 text-sm font-medium text-slate-700">
+								Zusätzlich: Land enthält&nbsp;
+								<span className="font-normal text-slate-500">(optional)</span>
+								<input
+									value={xmlExportCountry}
+									onChange={(e) => setXmlExportCountry(e.target.value)}
+									className={`${inputCls()} mt-1`}
+									placeholder="z.&nbsp;B. Montenegro"
+								/>
+							</label>
+						</div>
+						<p className="text-[11px] text-slate-500">
+							Im XML müssen Dokument‑IDs gesetzt sein; ohne <code className="font-mono text-[10px]">id</code> wird
+							das Objekt beim Export ausgelassen ({getFilteredListingsForExport().length} von {inventory.length}{' '}
+							aktuell).
+						</p>
+						<div className="flex flex-wrap gap-2">
+							<button
+								type="button"
+								disabled={busy || inventoryLoading}
+								onClick={exportListingsXmlFile}
+								className="rounded-xl border border-accent/35 bg-accent/12 px-4 py-2.5 text-sm font-semibold text-brand-950 hover:bg-accent/20 disabled:opacity-50"
+							>
+								XML herunterladen
+							</button>
+							<button
+								type="button"
+								disabled={busy || inventoryLoading}
+								onClick={exportListingsCsvFile}
+								className="rounded-xl border border-slate-200/90 bg-white/70 px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-white disabled:opacity-50"
+							>
+								CSV herunterladen
+							</button>
+						</div>
+					</div>
+					<div className="glass-panel-soft grid gap-6 p-5 sm:grid-cols-2">
+						<div className="space-y-3">
+							<h3 className="text-sm font-semibold text-gray-900">Import: Zeilen einschränken</h3>
+							<p className="text-[11px] leading-relaxed text-slate-600">
+								Gilt für Adriom, OpenImmo und CSV — vergleichbar mit Datenfiltern bei{' '}
+								<a
+									className="font-medium text-amber-900 underline decoration-amber-300/70 underline-offset-2 hover:text-amber-950"
+									href="https://www.wpallimport.com/documentation/wp-all-import-in-depth-overview/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									WP&nbsp;All&nbsp;Import
+								</a>
+								, nur ohne WordPress.
+							</p>
+							<div className="grid gap-3 sm:grid-cols-2">
+								<label className="block text-xs font-medium text-slate-700">
+									Preis&nbsp;min.&nbsp;(€)
+									<input
+										type="text"
+										inputMode="decimal"
+										value={importFilterMinPrice}
+										onChange={(e) => setImportFilterMinPrice(e.target.value)}
+										className={`${inputCls()} mt-1 text-sm`}
+										placeholder="z.&nbsp;B. 100000"
+									/>
+								</label>
+								<label className="block text-xs font-medium text-slate-700">
+									Preis&nbsp;max.&nbsp;(€)
+									<input
+										type="text"
+										inputMode="decimal"
+										value={importFilterMaxPrice}
+										onChange={(e) => setImportFilterMaxPrice(e.target.value)}
+										className={`${inputCls()} mt-1 text-sm`}
+										placeholder="optional"
+									/>
+								</label>
+							</div>
+							<div className="grid gap-3 sm:grid-cols-2">
+								<label className="block text-xs font-medium text-slate-700">
+									Stadt enthält
+									<input
+										value={importFilterCity}
+										onChange={(e) => setImportFilterCity(e.target.value)}
+										className={`${inputCls()} mt-1 text-sm`}
+										placeholder="Teilstring"
+									/>
+								</label>
+								<label className="block text-xs font-medium text-slate-700">
+									Land enthält
+									<input
+										value={importFilterCountry}
+										onChange={(e) => setImportFilterCountry(e.target.value)}
+										className={`${inputCls()} mt-1 text-sm`}
+										placeholder="Teilstring"
+									/>
+								</label>
+							</div>
+							<label className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
+								<input
+									type="checkbox"
+									checked={importFilterFeaturedOnly}
+									onChange={(e) => setImportFilterFeaturedOnly(e.target.checked)}
+									className="mt-0.5 rounded border-slate-300"
+								/>
+								<span>Nur Einträge mit „featured“</span>
+							</label>
+							<label className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
+								<input
+									type="checkbox"
+									checked={importFilterRequireImages}
+									onChange={(e) => setImportFilterRequireImages(e.target.checked)}
+									className="mt-0.5 rounded border-slate-300"
+								/>
+								<span>Nur Zeilen mit mindestens einem Bild</span>
+							</label>
+						</div>
+						<div className="space-y-4 border-t border-slate-200/80 pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+							<h3 className="text-sm font-semibold text-gray-900">Abgleich / Aktualisieren</h3>
+							<label className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
+								<input
+									type="checkbox"
+									checked={csvDocIdColumn}
+									onChange={(e) => setCsvDocIdColumn(e.target.checked)}
+									className="mt-0.5 rounded border-slate-300"
+								/>
+								<span>
+									<strong>CSV:</strong> Spalte <code className="rounded bg-slate-100 px-1 font-mono text-[10px]">id</code>{' '}
+									ist die Firestore‑Dokument‑ID (wie Adriom‑Re‑Import; bestehende Dokumente werden überschrieben).
+								</span>
+							</label>
+							<label className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
+								<input
+									type="checkbox"
+									checked={openImmoMergeByExternalId}
+									onChange={(e) => {
+										const on = e.target.checked;
+										setOpenImmoMergeByExternalId(on);
+										if (!on) setImportDeleteMissingByExternalId(false);
+									}}
+									className="mt-0.5 rounded border-slate-300"
+								/>
+								<span>
+									<strong>OpenImmo &amp; CSV (ohne „id“):</strong> bestehende Einträge anhand{' '}
+									<code className="rounded bg-slate-100 px-1 font-mono text-[10px]">externalId</code>{' '}
+									aktualisieren (<code className="font-mono text-[10px]">merge</code> in Firestore); sonst immer neue
+									Dokumente.
+								</span>
+							</label>
+							<label className="block text-xs font-medium text-slate-700">
+								Feed-/Import-Kennzeichen <span className="font-normal text-slate-500">(optional)</span>
+								<input
+									value={importFeedLabel}
+									onChange={(e) => setImportFeedLabel(e.target.value)}
+									className={`${inputCls()} mt-1 text-sm`}
+									placeholder="z.&nbsp;B. UK-Rightmove — wird als xmlFeedSource gespeichert"
+								/>
+							</label>
+							<label
+								className={`flex cursor-pointer items-start gap-2 text-xs text-slate-700 ${!openImmoMergeByExternalId ? 'opacity-50' : ''}`}
+							>
+								<input
+									type="checkbox"
+									disabled={!openImmoMergeByExternalId}
+									checked={importDeleteMissingByExternalId}
+									onChange={(e) => setImportDeleteMissingByExternalId(e.target.checked)}
+									className="mt-0.5 rounded border-slate-300"
+								/>
+								<span>
+									<strong>Fehlende Datensätze löschen:</strong> nach dem Import alle Firestore‑Einträge mit{' '}
+									<code className="rounded bg-slate-100 px-1 font-mono text-[10px]">source: xml</code> entfernen, deren{' '}
+									<code className="font-mono text-[10px]">externalId</code> in dieser Datei nicht mehr vorkommt (wie WP
+									„Remove missing“). Erfordert Merge per <code className="font-mono text-[10px]">externalId</code> und{' '}
+									<strong className="font-normal">externalId in jeder Zeile</strong>.
+								</span>
+							</label>
+							<label className="block text-xs font-medium text-slate-700">
+								Nur Lösch-Kandidaten, deren Feed‑Text/URL enthält…{' '}
+								<span className="font-normal text-slate-500">(optional, empfohlen bei mehreren Quellen)</span>
+								<input
+									value={importDeleteMissingFeedScope}
+									onChange={(e) => setImportDeleteMissingFeedScope(e.target.value)}
+									disabled={!importDeleteMissingByExternalId}
+									className={`${inputCls()} mt-1 text-sm disabled:opacity-50`}
+									placeholder="Teilstring aus xmlFeedSource oder xmlFeedSourceUrl"
+								/>
+								{importDeleteMissingByExternalId ? (
+									<p className="mt-1 text-[10px] leading-relaxed text-amber-900/90">
+										Ohne Teilstring: alle Dokumente mit{' '}
+										<code className="rounded bg-amber-100/80 px-1 font-mono text-[9px]">source: xml</code> und gesetzter{' '}
+										<code className="font-mono text-[9px]">externalId</code>, die nicht in dieser Datei sind — nutzen Sie
+										Kennzeichen + Teilstring, wenn mehrere Feeds dieselbe Quelle haben.
+									</p>
+								) : null}
+							</label>
+							<p className="text-[11px] leading-relaxed text-slate-500">
+								Details und Begriffe (Filter, Zuordnung, Update) im{' '}
+								<a
+									className="font-medium text-amber-900 underline decoration-amber-300/70 underline-offset-2 hover:text-amber-950"
+									href="https://www.wpallimport.com/documentation/wp-all-import-in-depth-overview/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									Überblicksartikel zu WP&nbsp;All&nbsp;Import
+								</a>
+								.
+							</p>
+						</div>
+					</div>
 					<div className="glass-panel-soft grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-end">
 						<label className="block text-sm font-medium text-slate-700">
 							Öffentliche Liste (URL)
@@ -953,6 +1606,12 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 								className={inputCls()}
 								placeholder="https://…/listings.xml"
 							/>
+							<span className="mt-1 block text-[11px] leading-relaxed text-slate-500">
+								Feeds ohne CORS (z.&nbsp;B. Bitrix-Export) werden nach fehlgeschlagenem Direktabruf automatisch über die
+								Cloud Function <code className="rounded bg-slate-100 px-1 font-mono text-[10px]">fetchXmlFeedProxy</code>{' '}
+								geladen — einmalig <code className="font-mono text-[10px]">firebase deploy --only functions</code>{' '}
+								ausführen (Region <code className="font-mono text-[10px]">europe-west1</code>).
+							</span>
 						</label>
 						<button
 							type="button"
@@ -980,7 +1639,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						<label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200/90 bg-white/60 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:border-amber-200/90 hover:bg-white/85">
 							<input
 								type="file"
-								accept=".xml,application/xml,text/xml"
+								accept=".xml,.csv,application/xml,text/xml,text/csv"
 								className="sr-only"
 								onChange={(e) => {
 									const f = e.target.files?.[0];
@@ -988,7 +1647,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 									void f.text().then(setXmlText);
 								}}
 							/>
-							Export-Datei wählen
+							XML- oder CSV-Datei wählen
 						</label>
 						<span className="text-xs text-slate-500">oder Inhalt unten einfügen</span>
 					</div>
@@ -999,13 +1658,16 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 							onChange={(e) => setXmlText(e.target.value)}
 							rows={18}
 							className={`${inputCls()} resize-y font-mono text-xs`}
-							placeholder="Inhalt von „URL laden“ hier einfügen oder Datei wählen …"
+							placeholder="XML-, OpenImmo- oder CSV-Inhalt (Export-CSV) einfügen oder Datei wählen …"
 						/>
 					</label>
 					<p className="text-sm text-slate-600">
-						Zuerst analysieren – es öffnet sich ein Dialog mit Prüfhinweisen. Sie wählen die Zeilen und bestätigen
-						dann den Import. Bei Adriom gleichen Dokumenten-IDs entspricht eine erneute Übernahme einem Update –
-						beim Import aus OpenImmo entstehen pro Zeile neue Firestore-Einträge.
+						Zuerst analysieren: bei Adriom, OpenImmo oder CSV öffnet sich direkt die Prüfvorschau. Anderes
+						gültiges&nbsp;XML startet einen Schritt Feldzuordnung mit Live‑Vorschau (ähnlich WP&nbsp;All&nbsp;Import).
+						Sie wählen danach wie gewohnt Zeilen und bestätigen den Import. Bei gleicher Firestore‑Dokument‑ID
+						(Adriom oder CSV mit Spalte „id“) ist die Übernahme ein Update. OpenImmo, gemappte Fremd‑Feeds und CSV
+						ohne „id“ legen neue Dokumente an — optional per&nbsp;
+						<code className="rounded bg-slate-100 px-1 font-mono text-xs">externalId</code> zusammenführen.
 					</p>
 					<div className="flex flex-wrap gap-3">
 						<button
@@ -1034,6 +1696,12 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				onSelectOnlyValid={selectOnlyValidXmlRows}
 				onDeselectAll={deselectAllXmlRows}
 				onConfirmImport={() => void commitXmlStaging()}
+			/>
+			<GenericXmlMappingDialog
+				open={genericXmlMapOpen}
+				xmlText={xmlText}
+				onClose={() => setGenericXmlMapOpen(false)}
+				onApply={handleGenericXmlMapped}
 			/>
 		</div>
 	);

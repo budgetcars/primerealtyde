@@ -71,10 +71,20 @@ export function validateListingXmlImport(
 	const desc = li.description?.trim() ?? '';
 	if (!desc) warnings.push('Beschreibung ist leer.');
 
+	const hasPurchase = li.priceEuro != null && Number.isFinite(li.priceEuro) && li.priceEuro > 0;
+	const hasMonthly = li.pricePerMonthEuro != null && Number.isFinite(li.pricePerMonthEuro) && li.pricePerMonthEuro > 0;
+
 	if (li.priceEuro != null) {
-		if (li.priceEuro < 0) errors.push('Preis darf nicht negativ sein.');
-		if (!Number.isFinite(li.priceEuro)) errors.push('Preis ist kein gültiger Zahlenwert.');
-	} else warnings.push('Preis nicht gesetzt („auf Anfrage“ möglich).');
+		if (li.priceEuro < 0) errors.push('Kaufpreis darf nicht negativ sein.');
+		if (!Number.isFinite(li.priceEuro)) errors.push('Kaufpreis ist kein gültiger Zahlenwert.');
+	}
+	if (li.pricePerMonthEuro != null) {
+		if (li.pricePerMonthEuro < 0) errors.push('Monatsmiete darf nicht negativ sein.');
+		if (!Number.isFinite(li.pricePerMonthEuro)) errors.push('Monatsmiete ist kein gültiger Zahlenwert.');
+	}
+	if (!hasPurchase && !hasMonthly) {
+		warnings.push('Weder Kaufpreis noch Monatsmiete gesetzt („auf Anfrage“ möglich).');
+	}
 
 	const imgs = Array.isArray(li.images) ? li.images : [];
 	if (imgs.length === 0) warnings.push('Es sind keine Bild-URLs angegeben.');

@@ -4,16 +4,11 @@ import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
 import { numberingLocale } from '../../i18n/locale';
 import { listingsUi as copy } from '../../i18n/copy/listingsUi';
+import { formatListingPricePrimary, listingPrimaryUsesMonthlySuffix } from '../../lib/listingPriceDisplay';
 import { getDb, isFirebaseConfigured } from '../../lib/firebase/client';
 import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
 
 type UiStrings = (typeof copy)['de'];
-
-function formatPrice(euro: number | null, locale: Locale): string {
-	const num = numberingLocale(locale);
-	if (euro == null) return copy[locale].priceOnRequest;
-	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
-}
 
 function formatPriceSqm(euro: number | null, locale: Locale): string {
 	if (euro == null) return '–';
@@ -150,8 +145,8 @@ export function ListingDetailClient({
 					) : null}
 				</div>
 				<h1 className="mt-2 font-heading-display text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">{listing.title}</h1>
-				<p className="mt-4 text-2xl font-semibold text-amber-950">{formatPrice(listing.priceEuro, locale)}</p>
-				{listing.pricePerSqmEuro != null ? (
+				<p className="mt-4 text-2xl font-semibold text-amber-950">{formatListingPricePrimary(listing, locale)}</p>
+				{listing.pricePerSqmEuro != null && !listingPrimaryUsesMonthlySuffix(listing) ? (
 					<p className="mt-1 text-sm text-slate-600">{formatPriceSqm(listing.pricePerSqmEuro, locale)}</p>
 				) : null}
 

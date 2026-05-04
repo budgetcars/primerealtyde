@@ -1,0 +1,149 @@
+{
+	"indexes": [
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "sortCreatedAtMs", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "sortCreatedAtMs", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortCreatedAtMs", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "sortPricePrimary", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "sortPricePrimary", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "DESCENDING" },
+				{ "fieldPath": "__name__", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "listings",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "browseCountryKey", "order": "ASCENDING" },
+				{ "fieldPath": "browseTypeKey", "order": "ASCENDING" },
+				{ "fieldPath": "sortPricePrimary", "order": "ASCENDING" },
+				{ "fieldPath": "__name__", "order": "ASCENDING" }
+			]
+		}
+	],
+	"fieldOverrides": []
+}

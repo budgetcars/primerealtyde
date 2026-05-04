@@ -3,6 +3,7 @@ import type { Locale } from '../locale';
 export const listingsUi = {
 	de: {
 		priceOnRequest: 'Preis auf Anfrage',
+		pricePerMonthSuffix: ' / Monat',
 		noListingsIntro: 'Zurzeit sind keine Objekte online. Wir freuen uns auf Ihre',
 		noListingsInquiry: 'Anfrage',
 		pageTitle: 'Immobilien',
@@ -37,10 +38,20 @@ export const listingsUi = {
 		mapNoCoordsHint:
 			'Ohne gespeicherte Koordinaten erscheinen Objekte nur in der Liste – die Karte zeigt den Überblicksbereich.',
 		listSectionTitle: 'Liste',
-		listSectionLead: 'Alle Treffer mit Fotos und Details.',
+		listSectionLead: 'Bis zu 50 Objekte pro Seite (weniger Datenverkehr). Karte zeigt dieselbe Seite.',
+		catalogLegacyHint:
+			'Ältere Einträge ohne Katalog-Indexfelder: es wird der gesamte Bestand geladen (einmal Admin-Import/Speichern ausführen, um Felder zu setzen).',
+		catalogNext: 'Nächste 50',
+		catalogPrev: 'Zurück',
+		catalogFirst: 'Erste Seite',
+		catalogPageInfo: '{from}–{to} von {total}',
+		catalogPageIndexedInfo: '{n} Objekte (diese Seite)',
+		catalogIndexErrorHint:
+			'Firestore-Index fehlt oder Abfrage ungültig. In der Firebase Console unter Firestore → Indexes den vorgeschlagenen Index anlegen und erneut laden.',
 	},
 	en: {
 		priceOnRequest: 'Price on request',
+		pricePerMonthSuffix: ' / month',
 		noListingsIntro: 'No properties are listed online yet. We would be delighted to hear from you:',
 		noListingsInquiry: 'Get in touch',
 		pageTitle: 'Listings',
@@ -75,10 +86,20 @@ export const listingsUi = {
 		mapNoCoordsHint:
 			'Listings without stored coordinates only appear below; the map shows a regional overview.',
 		listSectionTitle: 'List',
-		listSectionLead: 'All matches with photos and details.',
+		listSectionLead: 'Up to 50 listings per page (less traffic). The map shows the same page.',
+		catalogLegacyHint:
+			'Older documents without catalog index fields: the full collection is loaded (re-save or re-import from Admin to populate fields).',
+		catalogNext: 'Next 50',
+		catalogPrev: 'Back',
+		catalogFirst: 'First page',
+		catalogPageInfo: '{from}–{to} of {total}',
+		catalogPageIndexedInfo: '{n} listings (this page)',
+		catalogIndexErrorHint:
+			'Missing Firestore index or invalid query. Create the suggested index under Firestore → Indexes in the Firebase console, then reload.',
 	},
 	ru: {
 		priceOnRequest: 'Цена по запросу',
+		pricePerMonthSuffix: '/мес.',
 		noListingsIntro:
 			'На сайте пока нет объектов для онлайн-показа. Мы с радостью ответим на ваш ',
 		noListingsInquiry: 'запрос',
@@ -114,10 +135,20 @@ export const listingsUi = {
 		mapNoCoordsHint:
 			'Без координат объект виден только в списке; карта показывает обзорную область.',
 		listSectionTitle: 'Список',
-		listSectionLead: 'Все найденные предложения с фото и деталями.',
+		listSectionLead: 'До 50 объектов на страницу (меньше трафика). Карта — те же объекты.',
+		catalogLegacyHint:
+			'Старые записи без полей индекса: загружается весь каталог (сохраните или импортируйте заново из админки).',
+		catalogNext: 'Следующие 50',
+		catalogPrev: 'Назад',
+		catalogFirst: 'Первая страница',
+		catalogPageInfo: '{from}–{to} из {total}',
+		catalogPageIndexedInfo: '{n} объектов (эта страница)',
+		catalogIndexErrorHint:
+			'Нет индекса Firestore или ошибка запроса. Создайте предложенный индекс в консоли Firebase → Firestore → Indexes и обновите страницу.',
 	},
 	zh: {
 		priceOnRequest: '价格面议',
+		pricePerMonthSuffix: '/月',
 		noListingsIntro: '目前线上暂无展示的房源，欢迎与我们联系：',
 		noListingsInquiry: '留下咨询',
 		pageTitle: '在售房源',
@@ -152,6 +183,13 @@ export const listingsUi = {
 		mapNoCoordsHint:
 			'没有坐标的条目仅可在下方列表中出现；顶部地图仍会显示区域鸟瞰。',
 		listSectionTitle: '列表视图',
-		listSectionLead: '所有匹配的房源均附照片及关键信息。',
+		listSectionLead: '每页最多 50 条（节省流量）。地图与列表为同一页数据。',
+		catalogLegacyHint: '旧数据缺少索引字段：将加载全量（请在后台重新保存或导入以写入索引）。',
+		catalogNext: '下一页 50 条',
+		catalogPrev: '返回',
+		catalogFirst: '回到第一页',
+		catalogPageInfo: '第 {from}–{to} 条，共 {total} 条',
+		catalogPageIndexedInfo: '本页 {n} 条',
+		catalogIndexErrorHint: '缺少 Firestore 索引或查询无效。请在 Firebase 控制台 Firestore → Indexes 创建建议的索引后刷新。',
 	},
 } satisfies Record<Locale, Record<string, string>>;

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
-import { numberingLocale } from '../../i18n/locale';
-import { listingsUi } from '../../i18n/copy/listingsUi';
+import { formatListingPriceShort } from '../../lib/listingPriceDisplay';
 import 'leaflet/dist/leaflet.css';
 
 function listingHref(detailBase: string, id: string): string {
@@ -15,13 +14,6 @@ function escapeHtml(s: string): string {
 		.replace(/</g, '&lt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;');
-}
-
-function formatPriceShort(euro: number | null, locale: Locale): string {
-	const L = listingsUi[locale];
-	const num = numberingLocale(locale);
-	if (euro == null) return L.priceOnRequest;
-	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
 }
 
 const DEFAULT_CENTER: [number, number] = [42.65, 18.0];
@@ -116,7 +108,7 @@ export function ListingsMap({
 			const lng = item.longitude as number;
 			const href = listingHref(detailBasePath, item.id ?? '');
 			const title = escapeHtml(item.title ?? '');
-			const price = escapeHtml(formatPriceShort(item.priceEuro, locale));
+			const price = escapeHtml(formatListingPriceShort(item, locale));
 			const marker = L.circleMarker([lat, lng], {
 				radius: 10,
 				fillColor: '#b45309',

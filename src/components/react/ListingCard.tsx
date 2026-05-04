@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
-import { numberingLocale } from '../../i18n/locale';
-import { listingsUi } from '../../i18n/copy/listingsUi';
+import { formatListingPricePrimary } from '../../lib/listingPriceDisplay';
 import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
 
 export function listingHref(detailBase: string, id: string): string {
 	return `${detailBase}?id=${encodeURIComponent(id)}`;
-}
-
-function formatPrice(euro: number | null, locale: Locale): string {
-	const L = listingsUi[locale];
-	const num = numberingLocale(locale);
-	if (euro == null) return L.priceOnRequest;
-	return new Intl.NumberFormat(num, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(euro);
 }
 
 export function ListingCard({
@@ -65,7 +57,7 @@ export function ListingCard({
 					{item.zip ? ` · ${item.zip}` : ''}
 					{item.street ? ` · ${item.street}` : ''}
 				</p>
-				<p className="mt-auto pt-2 text-base font-semibold text-amber-950">{formatPrice(item.priceEuro, locale)}</p>
+				<p className="mt-auto pt-2 text-base font-semibold text-amber-950">{formatListingPricePrimary(item, locale)}</p>
 			</div>
 		</a>
 	);

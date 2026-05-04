@@ -42,3 +42,7 @@ export function getDb() {
 export function getFirebaseAuth() {
 	return getAuth(getFirebaseApp());
 }
+
+/** Region für Callable Functions (z. B. `fetchXmlFeedProxy`). Muss mit Deploy-Region übereinstimmen. */
+export const firebaseFunctionsRegion =
+	(import.meta.env.PUBLIC_FIREBASE_FUNCTIONS_REGION as string | undefined)?.trim() || 'europe-west1';

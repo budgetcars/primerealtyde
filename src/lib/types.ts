@@ -7,6 +7,8 @@ export interface Listing {
 	title: string;
 	description: string;
 	priceEuro: number | null;
+	/** Kaltmiete / Monatsmiete (z. B. Adriom &lt;pricePerMonth&gt;) – Anzeige „… € / Monat“ */
+	pricePerMonthEuro?: number | null;
 	livingSpaceSqm: number | null;
 	rooms: number | null;
 	propertyType: string;
@@ -37,6 +39,14 @@ export interface Listing {
 	remoteCreatedAt?: string;
 	remoteUpdatedAt?: string;
 	syncedAt?: { seconds: number; nanoseconds: number } | null;
+
+	/** Katalog: Firestore-Filter/Sortierung (beim Schreiben gesetzt, z. B. via Admin-Import) */
+	browseCountryKey?: string;
+	browseTypeKey?: string;
+	sortCreatedAtMs?: number;
+	sortPricePrimary?: number;
+	bedroomsNum?: number;
+	cityLower?: string;
 }
 
 export type ListingInput = Omit<Listing, 'id' | 'createdAt' | 'syncedAt'>;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { AdriomParseResult } from '../../lib/xml/parseAdriom';
 import type { ListingInput } from '../../lib/types';
+import { formatListingPricePrimary } from '../../lib/listingPriceDisplay';
 
 export type XmlImportStagingRowAdriom = {
 	format: 'adriom';
@@ -31,6 +32,8 @@ export type XmlStagingState =
 	  }
 	| {
 			format: 'openimmo';
+			/** CSV-Zeilen ohne Spalte „id“ werden wie OpenImmo behandelt (neu / optional per externalId zusammenführen). */
+			source?: 'csv' | 'openimmo-xml' | 'generic-xml';
 			rows: XmlImportStagingRowOpenImmo[];
 	  };
 
@@ -52,11 +55,6 @@ function previewStreet(row: XmlImportStagingRow): string {
 	const li = listingFromRow(row);
 	const s = [li.street?.trim(), li.zip?.trim()].filter(Boolean).join(', ');
 	return s || '—';
-}
-
-function previewPriceEuro(row: XmlImportStagingRow): number | undefined {
-	const p = listingFromRow(row).priceEuro;
-	return p != null && Number.isFinite(p) ? p : undefined;
 }
 
 function previewImageCount(row: XmlImportStagingRow): number {
@@ -189,7 +187,7 @@ export function XmlImportReviewDialog(props: XmlImportReviewDialogProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-3 backdrop-blur-[2px]"
 			onClick={(e) => {
 				if ((e.target as HTMLElement).closest('[data-xml-dialog-sheet]')) return;
 				if (!busy) onClose();
@@ -199,25 +197,31 @@ export function XmlImportReviewDialog(props: XmlImportReviewDialogProps) {
 		>
 			<div
 				data-xml-dialog-sheet
-				className="glass-card flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden p-6 shadow-strong"
+				className="glass-card relative z-[1] flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden p-6 shadow-strong"
 				role="dialog"
 				aria-labelledby="xml-import-dialog-title"
 			>
 				<div className="flex flex-shrink-0 items-start justify-between gap-4">
 					<div>
 						<h2 id="xml-import-dialog-title" className="text-xl font-semibold text-primary">
-							XML-Übernahme prüfen
+							Import prüfen
 						</h2>
 						<p className="mt-2 text-secondary text-xs">
 							{showSpinner ? (
 								<>Datensätze werden eingelesen …</>
 							) : staging?.format === 'adriom' ? (
 								<>
-									Adriom-Feed ({rows.length} Einträge)
+									{staging.feedMeta.source === 'csv-import' ? 'CSV' : 'Adriom-Feed'} ({rows.length} Einträge)
 									{feedSummary ? <> · {feedSummary}</> : null}
 								</>
 							) : staging ? (
-								<>OpenImmo ({rows.length} Einträge)</>
+								<>
+									{staging.source === 'csv'
+										? 'CSV'
+										: staging.source === 'generic-xml'
+											? 'Eigenes XML (Mapping)'
+											: 'OpenImmo'} ({rows.length} Einträge)
+								</>
 							) : (
 								<>—</>
 							)}
@@ -357,11 +361,7 @@ export function XmlImportReviewDialog(props: XmlImportReviewDialogProps) {
 										<dt className="text-muted">Typ</dt>
 										<dd>{li.propertyType || '—'}</dd>
 										<dt className="text-muted">Preis</dt>
-										<dd className="font-medium">
-											{previewPriceEuro(currentRow) != null
-												? `${Math.round(previewPriceEuro(currentRow)!).toLocaleString('de-DE')} €`
-												: 'Auf Anfrage'}
-										</dd>
+										<dd className="font-medium">{formatListingPricePrimary(listingFromRow(currentRow), 'de')}</dd>
 										<dt className="text-muted">Fläche / Zi.</dt>
 										<dd>
 											{li.livingSpaceSqm != null ? `${li.livingSpaceSqm} m²` : '—'}

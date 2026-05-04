@@ -1,4 +1,5 @@
 import type { ListingInput } from '../types';
+import { withListingBrowseIndex } from '../listingBrowseIndex';
 
 function text(el: Element | null | undefined): string {
 	return el?.textContent?.trim().replace(/\s+/g, ' ') ?? '';
@@ -82,12 +83,15 @@ function parseListingElement(
 	const featuredRaw = text(listingEl.getElementsByTagName('featured')[0]).toLowerCase();
 	const featured = featuredRaw === 'true' || featuredRaw === '1';
 
-	const country = text(listingEl.getElementsByTagName('country')[0]);
+	const countryRaw = text(listingEl.getElementsByTagName('country')[0]);
+	const country = countryRaw.trim() || 'Montenegro';
 	const city = text(listingEl.getElementsByTagName('city')[0]);
 
 	const priceEl = listingEl.getElementsByTagName('price')[0];
 	const priceEuro = priceEl ? parseNum(text(priceEl)) : null;
 	const currency = priceEl?.getAttribute('currency') || 'EUR';
+	const pricePerMonthEl = listingEl.getElementsByTagName('pricePerMonth')[0];
+	const pricePerMonthEuro = pricePerMonthEl ? parseNum(text(pricePerMonthEl)) : null;
 
 	const priceSqmEl = listingEl.getElementsByTagName('pricePerSqm')[0];
 	const pricePerSqmEuro = priceSqmEl ? parseNum(text(priceSqmEl)) : null;
@@ -125,6 +129,7 @@ function parseListingElement(
 		title,
 		description,
 		priceEuro,
+		pricePerMonthEuro: pricePerMonthEuro ?? undefined,
 		livingSpaceSqm,
 		rooms,
 		bedrooms,
@@ -133,7 +138,7 @@ function parseListingElement(
 		city,
 		zip: '',
 		street: '',
-		country: country || undefined,
+		country,
 		images: collectImages(listingEl),
 		features: collectFeatures(listingEl),
 		source: 'adriom',
@@ -152,7 +157,7 @@ function parseListingElement(
 		remoteUpdatedAt: remoteUpdated || undefined,
 	};
 
-	return payload;
+	return withListingBrowseIndex(payload as unknown as Record<string, unknown>) as typeof payload;
 }
 
 export interface AdriomParseResult {

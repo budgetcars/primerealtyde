@@ -99,6 +99,54 @@ const detailPath = withLocalePath('/immobilie', locale);
 						</div>
 					</div>
 					</div>
+					<div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+						<div class="flex flex-col gap-1.5">
+							<label for={`browse-sort-${locale}`} class="text-xs font-medium text-slate-600">{filt.sortLegend}</label>
+							<select
+								name="sort"
+								id={`browse-sort-${locale}`}
+								class="min-h-11 rounded-xl border border-slate-200/90 bg-white/90 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+							>
+								{filt.sortOptions.map(({ value, label }) => <option value={value}>{label}</option>)}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<label for={`browse-price-min-${locale}`} class="text-xs font-medium text-slate-600">{filt.priceMinLegend}</label>
+							<input
+								type="number"
+								name="price_min"
+								id={`browse-price-min-${locale}`}
+								min="0"
+								step="1000"
+								class="min-h-11 rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+								placeholder="0"
+							/>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<label for={`browse-bedrooms-${locale}`} class="text-xs font-medium text-slate-600">{filt.bedroomsLegend}</label>
+							<select
+								name="bedrooms_min"
+								id={`browse-bedrooms-${locale}`}
+								class="min-h-11 rounded-xl border border-slate-200/90 bg-white/90 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+							>
+								{filt.bedroomsOptions.map(({ value, label }) => <option value={value}>{label}</option>)}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-2">
+							<label for={`browse-city-${locale}`} class="text-xs font-medium text-slate-600">{filt.cityLegend}</label>
+							<input
+								type="text"
+								name="city"
+								id={`browse-city-${locale}`}
+								autocomplete="off"
+								class="min-h-11 rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm backdrop-blur-sm focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-200/35"
+							/>
+						</div>
+						<label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200/90 bg-white/80 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm backdrop-blur-sm">
+							<input type="checkbox" name="featured" value="1" class="h-4 w-4 rounded border-slate-300 text-amber-700" />
+							<span>{filt.featuredLegend}</span>
+						</label>
+					</div>
 				</div>
 			</form>
 
@@ -107,7 +155,16 @@ const detailPath = withLocalePath('/immobilie', locale);
 					const form = document.getElementById('listing-browse-search');
 					if (!form || !(form instanceof HTMLFormElement)) return;
 					const params = new URLSearchParams(window.location.search);
-					const names = /** @type {const} */ (['q', 'country', 'type', 'price_max']);
+					const names = /** @type {const} */ ([
+						'q',
+						'country',
+						'type',
+						'price_max',
+						'price_min',
+						'bedrooms_min',
+						'city',
+						'sort',
+					]);
 					for (const name of names) {
 						const v = params.get(name);
 						if (v == null) continue;
@@ -118,6 +175,8 @@ const detailPath = withLocalePath('/immobilie', locale);
 							if (exists) el.value = v;
 						}
 					}
+					const feat = form.elements.namedItem('featured');
+					if (feat instanceof HTMLInputElement && params.get('featured') === '1') feat.checked = true;
 				});
 			</script>
 

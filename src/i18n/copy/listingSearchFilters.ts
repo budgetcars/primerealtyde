@@ -1,4 +1,4 @@
-import type { ListingBrowseFilters } from '../../lib/listingsQuery';
+import type { ListingBrowseFilters, ListingBrowseSortKey } from '../../lib/listingsQuery';
 import type { Locale } from '../locale';
 
 export type ListingSearchFiltersCopy = {
@@ -6,6 +6,13 @@ export type ListingSearchFiltersCopy = {
 	countryLegend: string;
 	typeLegend: string;
 	priceLegend: string;
+	priceMinLegend: string;
+	sortLegend: string;
+	sortOptions: readonly { value: ListingBrowseSortKey; label: string }[];
+	bedroomsLegend: string;
+	bedroomsOptions: readonly { value: string; label: string }[];
+	cityLegend: string;
+	featuredLegend: string;
 	search: string;
 	countries: readonly { slug: ListingBrowseFilters['countrySlug']; label: string }[];
 	types: readonly { slug: ListingBrowseFilters['propertyTypeSlug']; label: string }[];
@@ -18,11 +25,30 @@ export const listingSearchFiltersUi: Record<Locale, ListingSearchFiltersCopy> = 
 		countryLegend: 'Land',
 		typeLegend: 'Typ',
 		priceLegend: 'Max. Preis',
+		priceMinLegend: 'Min. Preis (EUR)',
+		sortLegend: 'Sortierung',
+		sortOptions: [
+			{ value: 'created_desc', label: 'Neueste zuerst' },
+			{ value: 'created_asc', label: 'Älteste zuerst' },
+			{ value: 'price_asc', label: 'Preis aufsteigend' },
+			{ value: 'price_desc', label: 'Preis absteigend' },
+		],
+		bedroomsLegend: 'Mind. Zimmer',
+		bedroomsOptions: [
+			{ value: '', label: 'egal' },
+			{ value: '1', label: '1+' },
+			{ value: '2', label: '2+' },
+			{ value: '3', label: '3+' },
+			{ value: '4', label: '4+' },
+			{ value: '5', label: '5+' },
+		],
+		cityLegend: 'Ort (enthält)',
+		featuredLegend: 'Nur Featured',
 		search: 'Suchen',
 		countries: [
 			{ slug: '', label: 'Alle Länder' },
 			{ slug: 'montenegro', label: 'Montenegro' },
-			{ slug: 'cyprus', label: 'Zypern' },
+			{ slug: 'cyprus', label: 'Zypern (Rep.)' },
 			{ slug: 'north-cyprus', label: 'Nordzypern' },
 			{ slug: 'turkey', label: 'Türkei' },
 			{ slug: 'georgia', label: 'Georgien' },
@@ -52,11 +78,30 @@ export const listingSearchFiltersUi: Record<Locale, ListingSearchFiltersCopy> = 
 		countryLegend: 'Country',
 		typeLegend: 'Type',
 		priceLegend: 'Max. price',
+		priceMinLegend: 'Min. price (EUR)',
+		sortLegend: 'Sort',
+		sortOptions: [
+			{ value: 'created_desc', label: 'Newest first' },
+			{ value: 'created_asc', label: 'Oldest first' },
+			{ value: 'price_asc', label: 'Price: low to high' },
+			{ value: 'price_desc', label: 'Price: high to low' },
+		],
+		bedroomsLegend: 'Min. bedrooms',
+		bedroomsOptions: [
+			{ value: '', label: 'Any' },
+			{ value: '1', label: '1+' },
+			{ value: '2', label: '2+' },
+			{ value: '3', label: '3+' },
+			{ value: '4', label: '4+' },
+			{ value: '5', label: '5+' },
+		],
+		cityLegend: 'City (contains)',
+		featuredLegend: 'Featured only',
 		search: 'Search',
 		countries: [
 			{ slug: '', label: 'All countries' },
 			{ slug: 'montenegro', label: 'Montenegro' },
-			{ slug: 'cyprus', label: 'Cyprus' },
+			{ slug: 'cyprus', label: 'Cyprus (Republic)' },
 			{ slug: 'north-cyprus', label: 'Northern Cyprus' },
 			{ slug: 'turkey', label: 'Turkey' },
 			{ slug: 'georgia', label: 'Georgia' },
@@ -86,6 +131,25 @@ export const listingSearchFiltersUi: Record<Locale, ListingSearchFiltersCopy> = 
 		countryLegend: 'Страна',
 		typeLegend: 'Тип',
 		priceLegend: 'Максимальная цена',
+		priceMinLegend: 'Мин. цена (EUR)',
+		sortLegend: 'Сортировка',
+		sortOptions: [
+			{ value: 'created_desc', label: 'Сначала новые' },
+			{ value: 'created_asc', label: 'Сначала старые' },
+			{ value: 'price_asc', label: 'Цена по возрастанию' },
+			{ value: 'price_desc', label: 'Цена по убыванию' },
+		],
+		bedroomsLegend: 'Мин. комнат',
+		bedroomsOptions: [
+			{ value: '', label: 'любое' },
+			{ value: '1', label: '1+' },
+			{ value: '2', label: '2+' },
+			{ value: '3', label: '3+' },
+			{ value: '4', label: '4+' },
+			{ value: '5', label: '5+' },
+		],
+		cityLegend: 'Город (содержит)',
+		featuredLegend: 'Только избранные',
 		search: 'Найти',
 		countries: [
 			{ slug: '', label: 'Все страны' },
@@ -120,6 +184,25 @@ export const listingSearchFiltersUi: Record<Locale, ListingSearchFiltersCopy> = 
 		countryLegend: '国家/地区',
 		typeLegend: '物业类型',
 		priceLegend: '最高总价',
+		priceMinLegend: '最低价格（EUR）',
+		sortLegend: '排序',
+		sortOptions: [
+			{ value: 'created_desc', label: '最新优先' },
+			{ value: 'created_asc', label: '最早优先' },
+			{ value: 'price_asc', label: '价格从低到高' },
+			{ value: 'price_desc', label: '价格从高到低' },
+		],
+		bedroomsLegend: '最少卧室',
+		bedroomsOptions: [
+			{ value: '', label: '不限' },
+			{ value: '1', label: '1+' },
+			{ value: '2', label: '2+' },
+			{ value: '3', label: '3+' },
+			{ value: '4', label: '4+' },
+			{ value: '5', label: '5+' },
+		],
+		cityLegend: '城市（包含）',
+		featuredLegend: '仅精选',
 		search: '搜索',
 		countries: [
 			{ slug: '', label: '全部国家' },
