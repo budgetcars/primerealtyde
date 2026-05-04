@@ -15,6 +15,50 @@ type UiStrings = (typeof copy)['de'];
 const mdWrap =
 	'max-w-3xl [&_a]:font-medium [&_a]:text-amber-900 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-amber-200 [&_blockquote]:pl-4 [&_blockquote]:text-slate-600 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:text-sm [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-gray-900 [&_h2]:mb-3 [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:mb-2 [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-gray-900 [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-3 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-sm [&_pre]:text-slate-100 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6';
 
+type FeatureMeta = { icon: string; labels: Record<Locale, string> };
+
+const FEATURE_META: Record<string, FeatureMeta> = {
+	parking: {
+		icon: '🚗',
+		labels: { de: 'Parkplatz', en: 'Parking', ru: 'Парковка', zh: '停车位' },
+	},
+	furnished: {
+		icon: '🛋️',
+		labels: { de: 'Moebliert', en: 'Furnished', ru: 'С мебелью', zh: '带家具' },
+	},
+	balcony: {
+		icon: '🏙️',
+		labels: { de: 'Balkon', en: 'Balcony', ru: 'Балкон', zh: '阳台' },
+	},
+	seaView: {
+		icon: '🌊',
+		labels: { de: 'Meerblick', en: 'Sea view', ru: 'Вид на море', zh: '海景' },
+	},
+	airConditioning: {
+		icon: '❄️',
+		labels: { de: 'Klimaanlage', en: 'Air conditioning', ru: 'Кондиционер', zh: '空调' },
+	},
+	pool: {
+		icon: '🏊',
+		labels: { de: 'Pool', en: 'Pool', ru: 'Бассейн', zh: '泳池' },
+	},
+};
+
+function humanizeFeatureKey(key: string): string {
+	return key
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		.replace(/[_-]+/g, ' ')
+		.trim()
+		.toLowerCase();
+}
+
+function featureDisplay(feature: string, locale: Locale): { icon: string; label: string } {
+	const key = feature.trim();
+	const hit = FEATURE_META[key];
+	if (hit) return { icon: hit.icon, label: hit.labels[locale] ?? hit.labels.de };
+	return { icon: '•', label: humanizeFeatureKey(key) || key };
+}
+
 function formatPriceSqm(euro: number | null, locale: Locale): string {
 	if (euro == null) return '–';
 	const num = numberingLocale(locale);
@@ -241,14 +285,18 @@ export function ListingDetailClient({
 					<div className="mt-8">
 						<h2 className="text-sm font-semibold text-slate-600">{L.features}</h2>
 						<ul className="mt-3 flex flex-wrap gap-2">
-							{listing.features.map((f, i) => (
-								<li
-									key={`${f}-${i}`}
-									className="rounded-full border border-white/70 bg-white/40 px-3 py-1 text-xs font-medium text-slate-700 backdrop-blur-sm"
-								>
-									{f}
-								</li>
-							))}
+							{listing.features.map((f, i) => {
+								const d = featureDisplay(f, locale);
+								return (
+									<li
+										key={`${f}-${i}`}
+										className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/40 px-3 py-1 text-xs font-medium text-slate-700 backdrop-blur-sm"
+									>
+										<span aria-hidden>{d.icon}</span>
+										<span>{d.label}</span>
+									</li>
+								);
+							})}
 						</ul>
 					</div>
 				) : null}
