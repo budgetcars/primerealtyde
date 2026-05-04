@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ui } from '../../i18n/ui';
+import { withLocalePath } from '../../i18n/locale';
+import { FirestoreArticleClient } from '../../components/react/FirestoreArticleClient';
+
+const locale = 'de';
+const L = ui[locale];
+const slug = Astro.url.searchParams.get('slug');
+---
+
+<BaseLayout locale={locale} title={L.blogPageTitle} description={L.blogPageMeta}>
+	<section class="mx-auto max-w-4xl px-4 py-14 md:py-20">
+		<FirestoreArticleClient
+			client:only="react"
+			locale={locale}
+			collection="blogPosts"
+			slug={slug}
+			notFoundMessage={L.articleNotFound}
+			backHref={withLocalePath('/blog', locale)}
+			backLabel={L.backToBlog}
+		/>
+	</section>
+</BaseLayout>

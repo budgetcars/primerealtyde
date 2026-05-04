@@ -37,6 +37,7 @@ import {
 	type XmlStagingState,
 } from './XmlImportReviewDialog';
 import { GenericXmlMappingDialog } from './GenericXmlMappingDialog';
+import { AdminMarkdownCollectionEditor } from './AdminMarkdownCollectionEditor';
 import {
 	exportListingsToAdriomListingsXml,
 	exportListingsToCsv,
@@ -116,7 +117,7 @@ function yieldToUi(): Promise<void> {
 	});
 }
 
-type AdminTab = 'inventory' | 'manual' | 'xml';
+type AdminTab = 'inventory' | 'manual' | 'xml' | 'blog' | 'texts';
 
 export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const skipped = !isFirebaseConfigured();
@@ -1007,8 +1008,10 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						PUBLIC_FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID
 					</code>
 					. Anschließend Projekt neu bauen/starten und in der Firebase Console mindestens einen Mail/Passwort-User unter Authentication anlegen sowie
-					Sicherheitsregeln für die Collection{' '}
-					<code className="font-mono text-xs">listings</code> setzen.
+					Sicherheitsregeln für die Collections{' '}
+					<code className="font-mono text-xs">listings</code>,{' '}
+					<code className="font-mono text-xs">blogPosts</code>,{' '}
+					<code className="font-mono text-xs">siteTexts</code> setzen.
 				</p>
 			</div>
 		);
@@ -1084,50 +1087,61 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	}
 
 	const tabCls = (t: AdminTab) =>
-		`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+		`rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
 			tab === t ? 'bg-accent text-brand-900 shadow-sm' : 'text-slate-600 hover:bg-white/50 hover:text-gray-900'
 		}`;
+	const sideBtn = (t: AdminTab) => `${tabCls(t)} w-full text-left`;
 
 	return (
-		<div className="space-y-8">
-			<div className="glass-panel-soft flex flex-wrap items-center justify-between gap-4 px-6 py-4">
-				<div>
-					<p className="text-sm font-medium text-slate-600">Admin</p>
-					<p className="mt-0.5 text-sm text-slate-700">
-						Angemeldet als <span className="font-semibold text-gray-900">{user.email}</span>
-					</p>
-				</div>
-				<div className="flex flex-wrap gap-2">
-					<button
-						type="button"
-						disabled={inventoryLoading || busy}
-						onClick={() => void loadInventory()}
-						className="rounded-lg border border-slate-200/90 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:bg-white/85 disabled:opacity-50"
-					>
-						{inventoryLoading ? 'Lade …' : 'Bestand aktualisieren'}
+		<div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+			<aside className="glass-panel-soft shrink-0 rounded-2xl p-3 lg:sticky lg:top-28 lg:w-56">
+				<nav className="flex flex-wrap gap-2 lg:flex-col lg:gap-1">
+					<p className="hidden px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 lg:block">Immobilien</p>
+					<button type="button" onClick={() => setTab('inventory')} className={sideBtn('inventory')}>
+						Bestand <span className="font-normal opacity-75">({inventory.length})</span>
 					</button>
-					<button
-						type="button"
-						onClick={() => void logout()}
-						className="rounded-lg border border-slate-200/90 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:bg-white/80"
-					>
-						Abmelden
+					<button type="button" onClick={() => setTab('manual')} className={sideBtn('manual')}>
+						{editingId ? 'Objekt bearbeiten' : 'Manuell'}
 					</button>
-				</div>
-			</div>
+					<button type="button" onClick={() => setTab('xml')} className={sideBtn('xml')}>
+						Feed / XML
+					</button>
+					<p className="mt-2 hidden px-2 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 lg:block">Inhalt</p>
+					<button type="button" onClick={() => setTab('blog')} className={sideBtn('blog')}>
+						Blog
+					</button>
+					<button type="button" onClick={() => setTab('texts')} className={sideBtn('texts')}>
+						Textseiten
+					</button>
+				</nav>
+			</aside>
 
-			<div className="flex flex-wrap gap-2 border-b border-white/70 pb-2">
-				<button type="button" onClick={() => setTab('inventory')} className={tabCls('inventory')}>
-					Bestand{' '}
-					<span className="font-normal opacity-75">({inventory.length})</span>
-				</button>
-				<button type="button" onClick={() => setTab('manual')} className={tabCls('manual')}>
-					{editingId ? 'Objekt bearbeiten' : 'Manuell'}
-				</button>
-				<button type="button" onClick={() => setTab('xml')} className={tabCls('xml')}>
-					Feed / XML
-				</button>
-			</div>
+			<div className="min-w-0 flex-1 space-y-8">
+				<div className="glass-panel-soft flex flex-wrap items-center justify-between gap-4 px-6 py-4">
+					<div>
+						<p className="text-sm font-medium text-slate-600">Admin</p>
+						<p className="mt-0.5 text-sm text-slate-700">
+							Angemeldet als <span className="font-semibold text-gray-900">{user.email}</span>
+						</p>
+					</div>
+					<div className="flex flex-wrap gap-2">
+						<button
+							type="button"
+							disabled={inventoryLoading || busy}
+							onClick={() => void loadInventory()}
+							className="rounded-lg border border-slate-200/90 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:bg-white/85 disabled:opacity-50"
+						>
+							{inventoryLoading ? 'Lade …' : 'Bestand aktualisieren'}
+						</button>
+						<button
+							type="button"
+							onClick={() => void logout()}
+							className="rounded-lg border border-slate-200/90 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm hover:bg-white/80"
+						>
+							Abmelden
+						</button>
+					</div>
+				</div>
 
 			{status ? (
 				<p className="glass-panel-soft px-4 py-3 text-sm font-medium text-slate-800">{status}</p>
@@ -1685,6 +1699,9 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				</div>
 			) : null}
 
+			{tab === 'blog' ? <AdminMarkdownCollectionEditor variant="blog" /> : null}
+			{tab === 'texts' ? <AdminMarkdownCollectionEditor variant="siteTexts" /> : null}
+
 			<XmlImportReviewDialog
 				open={xmlDialogOpen}
 				staging={xmlStaging}
@@ -1703,6 +1720,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 				onClose={() => setGenericXmlMapOpen(false)}
 				onApply={handleGenericXmlMapped}
 			/>
+			</div>
 		</div>
 	);
 }

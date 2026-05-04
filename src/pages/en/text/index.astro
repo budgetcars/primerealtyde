@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { ui } from '../../../i18n/ui';
+import { withLocalePath } from '../../../i18n/locale';
+import { FirestoreArticleListClient } from '../../../components/react/FirestoreArticleListClient';
+
+const locale = 'en';
+const L = ui[locale];
+---
+
+<BaseLayout locale={locale} title={L.textPageTitle} description={L.textPageMeta}>
+	<section class="relative mx-auto max-w-4xl px-4 py-14 md:py-20">
+		<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_70%_-5%,rgba(251,191,36,0.12),transparent_55%)]" />
+		<div class="relative">
+			<h1 class="font-heading-display text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">
+				{L.textPageTitle}
+			</h1>
+			<p class="mt-3 text-slate-600">{L.textPageMeta}</p>
+			<div class="mt-10">
+				<FirestoreArticleListClient
+					client:only="react"
+					locale={locale}
+					collection="siteTexts"
+					articleHrefBase={withLocalePath('/text/seite', locale)}
+					emptyMessage={L.textEmptyList}
+					readMoreLabel={L.readMore}
+				/>
+			</div>
+		</div>
+	</section>
+</BaseLayout>

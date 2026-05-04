@@ -111,6 +111,22 @@
 				{ "fieldPath": "sortPricePrimary", "order": "ASCENDING" },
 				{ "fieldPath": "__name__", "order": "ASCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "blogPosts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "locale", "order": "ASCENDING" },
+				{ "fieldPath": "published", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "siteTexts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "locale", "order": "ASCENDING" },
+				{ "fieldPath": "published", "order": "ASCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []

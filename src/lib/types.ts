@@ -1,6 +1,31 @@
+import type { Locale } from '../i18n/locale';
+
 /** Einheitliches Objektmodell: manuell, OpenImmo oder Adriom-Feed */
 
 export type ListingSource = 'xml' | 'manual' | 'adriom';
+
+/** Blog (Collection `blogPosts`) — öffentlich lesbar wenn `published` */
+export interface BlogPostDoc {
+	id?: string;
+	locale: Locale;
+	slug: string;
+	title: string;
+	excerpt: string;
+	bodyMarkdown: string;
+	published: boolean;
+	updatedAt?: { seconds: number; nanoseconds: number } | null;
+}
+
+/** Freie Textseiten (Collection `siteTexts`) — z. B. Zusatzseiten / Editorial */
+export interface SiteTextDoc {
+	id?: string;
+	locale: Locale;
+	slug: string;
+	title: string;
+	bodyMarkdown: string;
+	published: boolean;
+	updatedAt?: { seconds: number; nanoseconds: number } | null;
+}
 
 export interface Listing {
 	id?: string;
