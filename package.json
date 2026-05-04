@@ -12,7 +12,8 @@
     "astro": "astro",
     "deploy": "astro build && firebase deploy",
     "deploy:hosting": "astro build && firebase deploy --only hosting",
-    "deploy:rules": "firebase deploy --only firestore:rules"
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "build:favicon": "node scripts/build-favicon.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.4",
@@ -27,6 +28,7 @@
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
-    "@types/leaflet": "^1.9.21"
+    "@types/leaflet": "^1.9.21",
+    "to-ico": "^1.1.2"
   }
 }
