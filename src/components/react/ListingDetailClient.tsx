@@ -125,9 +125,9 @@ export function ListingDetailClient({
 	const activePhoto = galleryImages[activeImageIndex] ?? galleryImages[0] ?? '';
 	const heroFallback = unsplashListingHero(listing.id ?? listing.title ?? '');
 	const heroUrl = activePhoto && !heroImgBroken ? activePhoto : heroFallback;
-	const mapHref =
+	const mapEmbedHref =
 		listing.latitude != null && listing.longitude != null
-			? `https://www.openstreetmap.org/?mlat=${listing.latitude}&mlon=${listing.longitude}#map=14/${listing.latitude}/${listing.longitude}`
+			? `https://www.openstreetmap.org/export/embed.html?bbox=${listing.longitude - 0.01}%2C${listing.latitude - 0.01}%2C${listing.longitude + 0.01}%2C${listing.latitude + 0.01}&layer=mapnik&marker=${listing.latitude}%2C${listing.longitude}`
 			: null;
 
 	const heroAlt = activePhoto && !heroImgBroken ? '' : `${listing.title} – ${L.imgAltFallback}`;
@@ -222,28 +222,20 @@ export function ListingDetailClient({
 					</div>
 				</dl>
 
-				<div className="mt-6 flex flex-wrap gap-3">
-					{listing.listingUrl ? (
-						<a
-							href={listing.listingUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex rounded-xl border border-white/80 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm transition hover:border-amber-200/90 hover:bg-white/80"
-						>
-							{L.openOriginalListing}
-						</a>
-					) : null}
-					{mapHref ? (
-						<a
-							href={mapHref}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex rounded-xl border border-white/80 bg-white/50 px-4 py-2 text-sm font-semibold text-gray-900 backdrop-blur-sm transition hover:border-amber-200/90 hover:bg-white/80"
-						>
-							{L.mapOsm}
-						</a>
-					) : null}
-				</div>
+				{mapEmbedHref ? (
+					<div className="mt-6">
+						<h2 className="text-sm font-semibold text-slate-600">{L.mapOsm}</h2>
+						<div className="mt-3 overflow-hidden rounded-xl border border-white/70 bg-white/45 p-1 backdrop-blur-md">
+							<iframe
+								title={L.mapOsm}
+								src={mapEmbedHref}
+								loading="lazy"
+								referrerPolicy="no-referrer-when-downgrade"
+								className="h-64 w-full rounded-lg border-0"
+							/>
+						</div>
+					</div>
+				) : null}
 
 				{listing.features?.length ? (
 					<div className="mt-8">
