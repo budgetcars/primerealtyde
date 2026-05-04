@@ -26,7 +26,7 @@ const navItems = [
 
 <header
 	id="site-header"
-	class="sticky top-0 z-50 border-b border-white/60 bg-white/75 shadow-sm shadow-slate-900/[0.04] backdrop-blur-2xl backdrop-saturate-150"
+	class="header-glass sticky top-0 z-50 border-b border-white/15 bg-slate-950/45 shadow-[0_8px_32px_-10px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150"
 	data-compact="false"
 >
 	<div class="header-main-row mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 md:gap-6 md:py-5">
@@ -42,12 +42,12 @@ const navItems = [
 				width={1254}
 				height={1254}
 				sizes="(min-width: 768px) 44rem, (min-width: 640px) 36rem, 100vw"
-				class="header-brand-logo h-[4.5rem] w-full max-h-[5.5rem] object-contain object-left transition-opacity group-hover:opacity-92 sm:h-20 md:h-[5.75rem]"
+				class="header-brand-logo h-[4.5rem] w-full max-h-[5.5rem] object-contain object-left drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.35)] transition-opacity group-hover:opacity-92 sm:h-20 md:h-[5.75rem]"
 				loading="eager"
 				fetchpriority="high"
 				decoding="async"
 			/>
-			<span class="header-brand-wordmark font-heading-display text-brand-900 text-xl font-semibold tracking-tight md:text-[1.625rem]"
+			<span class="header-brand-wordmark font-heading-display text-xl font-semibold tracking-tight text-slate-50 md:text-[1.625rem]"
 				>Prime Realty</span
 			>
 		</a>
@@ -57,7 +57,7 @@ const navItems = [
 					navItems.map((item) => (
 						<a
 							href={item.href}
-							class="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-amber-100/80 hover:text-amber-950"
+							class="header-nav-link rounded-xl px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/12 hover:text-white"
 						>
 							{item.label}
 						</a>
@@ -78,11 +78,11 @@ const navItems = [
 		</div>
 	</div>
 	<!-- Mobile navigation row -->
-	<nav class="header-mobile-nav border-t border-slate-200/70 bg-white/60 px-2 py-2 sm:hidden">
+	<nav class="header-mobile-nav border-t border-white/10 bg-slate-950/35 px-2 py-2 backdrop-blur-xl sm:hidden">
 		<div class="flex max-w-7xl flex-wrap justify-center gap-0.5">
 			{
 				navItems.map((item) => (
-					<a href={item.href} class="rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-amber-100/70">
+					<a href={item.href} class="header-nav-link rounded-lg px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-white/12 hover:text-white">
 						{item.label}
 					</a>
 				))
@@ -92,6 +92,27 @@ const navItems = [
 </header>
 
 <style>
+	.header-glass {
+		-webkit-backdrop-filter: blur(24px) saturate(1.2);
+	}
+
+	/** Lesbarkeit über wechselndem Bild-inhalt unter dem Frosting */
+	#site-header .header-nav-link {
+		text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+	}
+
+	#site-header[data-compact='true'].header-glass {
+		background-color: rgb(15 23 42 / 0.58);
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		#site-header.header-glass {
+			backdrop-filter: none;
+			-webkit-backdrop-filter: none;
+			background-color: rgb(15 23 42 / 0.92);
+		}
+	}
+
 	/** Kompakte Leiste beim Scroll — kleineres Logo, weniger Padding (Wortmarke nur Fallback) */
 	#site-header .header-brand-wordmark {
 		display: none;
