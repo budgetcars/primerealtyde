@@ -271,12 +271,6 @@ export function ListingsBrowse({
 
 	return (
 		<div className="space-y-10">
-			{useLegacyCatalog ? (
-				<p className="rounded-xl border border-amber-200/80 bg-amber-50/85 px-4 py-2 text-xs leading-relaxed text-amber-950 backdrop-blur-sm">
-					{L.catalogLegacyHint}
-				</p>
-			) : null}
-
 			<div className="relative">
 				<ListingsMap listings={items} detailBasePath={listingDetailBasePath} locale={locale} />
 				{items.length > 0 && visibleWithCoords.length === 0 ? (

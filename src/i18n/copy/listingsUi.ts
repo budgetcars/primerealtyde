@@ -39,8 +39,6 @@ export const listingsUi = {
 			'Ohne gespeicherte Koordinaten erscheinen Objekte nur in der Liste – die Karte zeigt den Überblicksbereich.',
 		listSectionTitle: 'Liste',
 		listSectionLead: 'Bis zu 50 Objekte pro Seite (weniger Datenverkehr). Karte zeigt dieselbe Seite.',
-		catalogLegacyHint:
-			'Ältere Einträge ohne Katalog-Indexfelder: es wird der gesamte Bestand geladen (einmal Admin-Import/Speichern ausführen, um Felder zu setzen).',
 		catalogNext: 'Nächste 50',
 		catalogPrev: 'Zurück',
 		catalogFirst: 'Erste Seite',
@@ -87,8 +85,6 @@ export const listingsUi = {
 			'Listings without stored coordinates only appear below; the map shows a regional overview.',
 		listSectionTitle: 'List',
 		listSectionLead: 'Up to 50 listings per page (less traffic). The map shows the same page.',
-		catalogLegacyHint:
-			'Older documents without catalog index fields: the full collection is loaded (re-save or re-import from Admin to populate fields).',
 		catalogNext: 'Next 50',
 		catalogPrev: 'Back',
 		catalogFirst: 'First page',
@@ -136,8 +132,6 @@ export const listingsUi = {
 			'Без координат объект виден только в списке; карта показывает обзорную область.',
 		listSectionTitle: 'Список',
 		listSectionLead: 'До 50 объектов на страницу (меньше трафика). Карта — те же объекты.',
-		catalogLegacyHint:
-			'Старые записи без полей индекса: загружается весь каталог (сохраните или импортируйте заново из админки).',
 		catalogNext: 'Следующие 50',
 		catalogPrev: 'Назад',
 		catalogFirst: 'Первая страница',
@@ -184,7 +178,6 @@ export const listingsUi = {
 			'没有坐标的条目仅可在下方列表中出现；顶部地图仍会显示区域鸟瞰。',
 		listSectionTitle: '列表视图',
 		listSectionLead: '每页最多 50 条（节省流量）。地图与列表为同一页数据。',
-		catalogLegacyHint: '旧数据缺少索引字段：将加载全量（请在后台重新保存或导入以写入索引）。',
 		catalogNext: '下一页 50 条',
 		catalogPrev: '返回',
 		catalogFirst: '回到第一页',
