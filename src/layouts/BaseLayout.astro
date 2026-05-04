@@ -21,6 +21,8 @@ interface Props {
 	locale?: Locale;
 	/** z. B. für `/admin` — nicht für Suchmaschinen indexieren */
 	robots?: 'noindex';
+	/** Für Admin o. ä.: Header/Footer und Sprach-Switch ausblenden */
+	chrome?: boolean;
 }
 
 const pathname = Astro.url.pathname;
@@ -62,6 +64,7 @@ const alternateXDefaultHref =
 
 const ogLocale = localeOg(locale);
 const robotsDirectives = Astro.props.robots === 'noindex' ? 'noindex, nofollow' : null;
+const chrome = Astro.props.chrome ?? true;
 ---
 
 <!doctype html>
@@ -125,11 +128,11 @@ const robotsDirectives = Astro.props.robots === 'noindex' ? 'noindex, nofollow' 
 		class="flex min-h-screen flex-col"
 		style={locale === 'zh' ? "font-family: Inter, 'Noto Sans SC', system-ui, sans-serif" : undefined}
 	>
-		<Header locale={locale} />
+		{chrome ? <Header locale={locale} /> : null}
 		<main class="flex-1">
 			<slot />
 		</main>
-		<Footer locale={locale} />
-		<LanguageFlagSwitch locale={locale} pathname={pathname} search={search} />
+		{chrome ? <Footer locale={locale} /> : null}
+		{chrome ? <LanguageFlagSwitch locale={locale} pathname={pathname} search={search} /> : null}
 	</body>
 </html>

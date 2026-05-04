@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app';
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	signInWithEmailAndPassword,
 	signOut,
@@ -47,6 +47,26 @@ import {
 import { formatListingPricePrimary } from '../../lib/listingPriceDisplay';
 
 const LISTINGS = 'listings';
+/** Firestore erlaubt höchstens 500 Operationen pro Batch-Commit */
+const FIRESTORE_BATCH_LIMIT = 500;
+
+/** Kompakte Icon-Buttons in der Bestands-Tabelle */
+const invIconBtn =
+	'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-40';
+const invIconAccent =
+	'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-amber-200 bg-amber-50/90 text-amber-950 transition hover:bg-amber-100/90 disabled:opacity-40';
+const invIconFeaturedOn =
+	'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-amber-400 bg-amber-100 text-amber-950 transition hover:bg-amber-50 disabled:opacity-40';
+const invIconDanger =
+	'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-red-200 bg-white text-red-700 transition hover:bg-red-50 disabled:opacity-40';
+
+function Svg16({ children }: { children: ReactNode }) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+			{children}
+		</svg>
+	);
+}
 
 function triggerBrowserDownload(contents: string, filename: string, mime: string) {
 	const blob = new Blob([contents], { type: mime });
@@ -135,6 +155,13 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 	const [inventory, setInventory] = useState<Listing[]>([]);
 	const [inventoryLoading, setInventoryLoading] = useState(false);
 	const [inventoryError, setInventoryError] = useState<string | null>(null);
+	const [selectedListingIds, setSelectedListingIds] = useState<Set<string>>(() => new Set());
+	const inventorySelectAllRef = useRef<HTMLInputElement>(null);
+
+	const selectableInventoryIds = useMemo(
+		() => inventory.map((r) => r.id).filter((x): x is string => Boolean(x)),
+		[inventory],
+	);
 
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editSource, setEditSource] = useState<ListingSource>('manual');
@@ -211,6 +238,44 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 		if (skipped || !user) return;
 		void loadInventory();
 	}, [skipped, user, loadInventory]);
+
+	useEffect(() => {
+		setSelectedListingIds((prev) => {
+			const valid = new Set(selectableInventoryIds);
+			let changed = false;
+			const next = new Set<string>();
+			for (const id of prev) {
+				if (valid.has(id)) next.add(id);
+				else changed = true;
+			}
+			return changed ? next : prev;
+		});
+	}, [selectableInventoryIds]);
+
+	useEffect(() => {
+		const el = inventorySelectAllRef.current;
+		if (!el) return;
+		const n = selectableInventoryIds.length;
+		const c = selectableInventoryIds.filter((id) => selectedListingIds.has(id)).length;
+		el.indeterminate = n > 0 && c > 0 && c < n;
+	}, [selectableInventoryIds, selectedListingIds]);
+
+	function toggleListingSelected(id: string) {
+		if (!id) return;
+		setSelectedListingIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	}
+
+	function toggleSelectAllInventory() {
+		const allOn =
+			selectableInventoryIds.length > 0 &&
+			selectableInventoryIds.every((id) => selectedListingIds.has(id));
+		setSelectedListingIds(allOn ? new Set() : new Set(selectableInventoryIds));
+	}
 
 	function clearManualForm() {
 		setEditingId(null);
@@ -360,6 +425,67 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 			await loadInventory();
 		} catch (e: unknown) {
 			setStatus(e instanceof Error ? e.message : 'Änderung fehlgeschlagen');
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function bulkSetFeaturedSelection(featuredValue: boolean) {
+		const ids = Array.from(selectedListingIds);
+		if (!ids.length || busy) return;
+		setStatus(null);
+		setBusy(true);
+		try {
+			const db = getDb();
+			for (let i = 0; i < ids.length; i += FIRESTORE_BATCH_LIMIT) {
+				const chunk = ids.slice(i, i + FIRESTORE_BATCH_LIMIT);
+				const batch = writeBatch(db);
+				for (const id of chunk) {
+					batch.update(doc(db, LISTINGS, id), { featured: featuredValue });
+				}
+				await batch.commit();
+			}
+			setStatus(
+				featuredValue
+					? `${ids.length} Objekt(e) als Featured markiert.`
+					: `Featured bei ${ids.length} Objekt(en) entfernt.`,
+			);
+			await loadInventory();
+		} catch (e: unknown) {
+			setStatus(e instanceof Error ? e.message : 'Featured-Änderung fehlgeschlagen');
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function bulkDeleteSelection() {
+		const ids = Array.from(selectedListingIds);
+		if (!ids.length || busy) return;
+		if (
+			!window.confirm(
+				`${ids.length} ausgewählte Objekt(e) wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.`,
+			)
+		) {
+			return;
+		}
+		setStatus(null);
+		setBusy(true);
+		try {
+			const db = getDb();
+			for (let i = 0; i < ids.length; i += FIRESTORE_BATCH_LIMIT) {
+				const chunk = ids.slice(i, i + FIRESTORE_BATCH_LIMIT);
+				const batch = writeBatch(db);
+				for (const id of chunk) {
+					batch.delete(doc(db, LISTINGS, id));
+				}
+				await batch.commit();
+			}
+			if (editingId && ids.includes(editingId)) clearManualForm();
+			setSelectedListingIds(new Set());
+			setStatus(`${ids.length} Eintrag/Einträge gelöscht.`);
+			await loadInventory();
+		} catch (e: unknown) {
+			setStatus(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
 		} finally {
 			setBusy(false);
 		}
@@ -1167,15 +1293,73 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						Einträge direkt aus der Firestore-Collection{' '}
 						<code className="rounded-md bg-white/75 px-1.5 py-0.5 font-mono text-xs">listings</code>.
 					</p>
+					{selectedListingIds.size > 0 ? (
+						<div className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+							<p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-700">
+								<span className="font-semibold text-gray-900">
+									{selectedListingIds.size} ausgewählt
+								</span>
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => setSelectedListingIds(new Set())}
+									className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+								>
+									Auswahl aufheben
+								</button>
+							</p>
+							<div className="flex flex-wrap gap-2">
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => void bulkSetFeaturedSelection(true)}
+									className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50"
+								>
+									Featured setzen
+								</button>
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => void bulkSetFeaturedSelection(false)}
+									className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+								>
+									Featured entfernen
+								</button>
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => void bulkDeleteSelection()}
+									className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+								>
+									Ausgewählte löschen
+								</button>
+							</div>
+						</div>
+					) : null}
 					{inventoryLoading && !inventory.length ? (
 						<div className="h-56 animate-pulse rounded-xl border border-white/55 bg-white/35 backdrop-blur-sm" />
 					) : inventory.length === 0 ? (
 						<p className="glass-panel-soft px-5 py-8 text-center text-sm text-slate-600">Noch keine Objekte – legen Sie welche unter „Manuell“ oder „Feed / XML“ an.</p>
 					) : (
-						<div className="-mx-1 overflow-x-auto rounded-xl border border-white/60 bg-white/[0.42] backdrop-blur-md">
-							<table className="w-full min-w-[42rem] text-left text-sm">
+						<div className="-mx-1 overflow-x-auto border border-slate-200 bg-white">
+							<table className="w-full min-w-[44rem] text-left text-sm">
 								<thead>
-									<tr className="border-b border-white/60 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+									<tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+										<th className="w-px whitespace-nowrap px-2 py-3 text-center" scope="col">
+											<input
+												ref={inventorySelectAllRef}
+												type="checkbox"
+												disabled={busy || selectableInventoryIds.length === 0}
+												checked={
+													selectableInventoryIds.length > 0 &&
+													selectableInventoryIds.every((id) => selectedListingIds.has(id))
+												}
+												onChange={toggleSelectAllInventory}
+												className="h-4 w-4 rounded border-slate-300 text-amber-600 accent-amber-600 focus:ring-2 focus:ring-amber-500/40"
+												aria-label="Alle Objekte auswählen"
+												title="Alle auswählen"
+											/>
+										</th>
 										<th className="px-4 py-3">Titel</th>
 										<th className="hidden px-2 py-3 sm:table-cell">Ort</th>
 										<th className="px-2 py-3 whitespace-nowrap">Preis</th>
@@ -1189,56 +1373,95 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 										const label = row.title || id || 'Ohne Titel';
 										const previewHref = id ? `${previewBase}?id=${encodeURIComponent(id)}` : previewBase;
 										return (
-											<tr key={id || label} className="border-b border-white/50 last:border-0">
+											<tr key={id || label} className="border-b border-slate-200 last:border-0 hover:bg-slate-50/60">
+												<td className="whitespace-nowrap px-2 py-3 text-center align-middle">
+													<input
+														type="checkbox"
+														disabled={busy || !id}
+														checked={Boolean(id && selectedListingIds.has(id))}
+														onChange={() => toggleListingSelected(id)}
+														className="h-4 w-4 rounded border-slate-300 text-amber-600 accent-amber-600 focus:ring-2 focus:ring-amber-500/40"
+														aria-label={`Auswahl „${label}“`}
+														title="Auswählen"
+													/>
+												</td>
 												<td className="px-4 py-3">
 													<div className="font-medium text-gray-900">{row.title}</div>
 													<div className="mt-0.5 text-xs text-slate-500 sm:hidden">{[row.country, row.city].filter(Boolean).join(' · ')}</div>
-													<div className="mt-1 flex flex-wrap gap-2">
-														{row.featured ? (
-															<span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950">
-																Featured
-															</span>
-														) : null}
-													</div>
 												</td>
 												<td className="hidden px-2 py-3 text-slate-700 sm:table-cell">
 													{[row.country, row.city, row.zip].filter(Boolean).join(' · ') || '—'}
 												</td>
 												<td className="whitespace-nowrap px-2 py-3 font-medium text-slate-800">{formatListingPricePrimary(row, 'de')}</td>
 												<td className="max-w-[7rem] truncate px-2 py-3 capitalize text-slate-600">{row.source ?? '—'}</td>
-												<td className="space-y-1 px-4 py-3 text-right">
-													<div className="flex flex-wrap justify-end gap-2">
+												<td className="px-2 py-3">
+													<div className="flex flex-nowrap items-center justify-end gap-1">
 														<button
 															type="button"
 															disabled={busy}
 															onClick={() => void toggleFeatured(id, row.featured)}
-															className="rounded-lg border border-slate-200/90 bg-white/60 px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-white"
+															className={row.featured ? invIconFeaturedOn : invIconAccent}
+															title={row.featured ? 'Featured entfernen' : 'Als Featured markieren'}
+															aria-label={row.featured ? 'Featured entfernen' : 'Als Featured markieren'}
 														>
-															{row.featured ? 'Featured aus' : 'Featured'}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																viewBox="0 0 24 24"
+																className="h-4 w-4"
+																fill={row.featured ? 'currentColor' : 'none'}
+																stroke="currentColor"
+																strokeWidth={row.featured ? 0 : 2}
+																strokeLinecap="round"
+																strokeLinejoin="round"
+																aria-hidden
+															>
+																<path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.887a1 1 0 00-1.176 0l-3.976 2.887c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+															</svg>
 														</button>
 														<a
 															href={previewHref}
 															target="_blank"
 															rel="noopener noreferrer"
-															className="inline-flex rounded-lg border border-slate-200/90 bg-white/60 px-2.5 py-1 text-xs font-semibold text-amber-950 hover:bg-amber-50/90"
+															className={invIconBtn}
+															title="Ansehen (neues Fenster)"
+															aria-label="Ansehen (neues Fenster)"
 														>
-															Ansehen
+															<Svg16>
+																<>
+																	<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+																	<polyline points="15 3 21 3 21 9" />
+																	<line x1="10" x2="21" y1="14" y2="3" />
+																</>
+															</Svg16>
 														</a>
 														<button
 															type="button"
 															disabled={busy || !id}
 															onClick={() => populateFromListing(row)}
-															className="rounded-lg border border-accent/35 bg-accent/15 px-2.5 py-1 text-xs font-semibold text-brand-950 hover:bg-accent/25"
+															className={invIconBtn}
+															title="Bearbeiten"
+															aria-label="Bearbeiten"
 														>
-															Bearbeiten
+															<Svg16>
+																<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+																<path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+															</Svg16>
 														</button>
 														<button
 															type="button"
 															disabled={busy || !id}
 															onClick={() => void removeListing(id, label)}
-															className="rounded-lg border border-red-200/85 bg-red-50/85 px-2.5 py-1 text-xs font-semibold text-red-900 hover:bg-red-100/90"
+															className={invIconDanger}
+															title="Löschen"
+															aria-label="Löschen"
 														>
-															Löschen
+															<Svg16>
+																<>
+																	<path d="M3 6h18" />
+																	<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+																	<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+																</>
+															</Svg16>
 														</button>
 													</div>
 												</td>

@@ -88,7 +88,9 @@ function PathLeafButton({
 			draggable
 			title="Ziehen in ein Feld oder klicken"
 			onDragStart={(e) => {
-				e.dataTransfer.setData('text/plain', tokenForDrag(sample.path));
+				const t = tokenForDrag(sample.path);
+				e.dataTransfer.setData('text/plain', t);
+				e.dataTransfer.setData('Text', t);
 				e.dataTransfer.effectAllowed = 'copy';
 			}}
 			onClick={() => onPathClick(sample.path)}
@@ -151,6 +153,19 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 	const [mapping, setMapping] = useState<GenericXmlFieldMapping>(() => defaultGenericXmlFieldMapping());
 	const [pathFilter, setPathFilter] = useState('');
 	const [lastFocusedKey, setLastFocusedKey] = useState<keyof GenericXmlFieldMapping | null>('title');
+	const [dragOverKey, setDragOverKey] = useState<keyof GenericXmlFieldMapping | null>(null);
+
+	useEffect(() => {
+		if (!open) {
+			setDragOverKey(null);
+			return;
+		}
+		const clear = () => setDragOverKey(null);
+		window.addEventListener('dragend', clear);
+		return () => {
+			window.removeEventListener('dragend', clear);
+		};
+	}, [open]);
 
 	const parsed = useMemo(() => {
 		if (!open) return null;
@@ -250,12 +265,51 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 	const onDropField = useCallback(
 		(key: keyof GenericXmlFieldMapping, e: DragEvent) => {
 			e.preventDefault();
-			const raw = e.dataTransfer.getData('text/plain').trim();
+			e.stopPropagation();
+			setDragOverKey(null);
+			const raw = (
+				e.dataTransfer.getData('text/plain').trim() ||
+				e.dataTransfer.getData('text/uri-list').trim() ||
+				e.dataTransfer.getData('text').trim()
+			);
 			if (!raw) return;
 			const token = raw.includes('{{') ? raw : tokenForDrag(raw);
 			appendToken(key, token);
 		},
 		[appendToken],
+	);
+
+	const fieldDnDHandlers = useCallback(
+		(key: keyof GenericXmlFieldMapping) => ({
+			onDragEnter: (e: DragEvent) => {
+				const can =
+					Array.from(e.dataTransfer.types).includes('text/plain') ||
+					Array.from(e.dataTransfer.types).includes('Text');
+				if (can) {
+					e.preventDefault();
+					setDragOverKey(key);
+				}
+			},
+			onDragOver: (e: DragEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				const dt = e.dataTransfer;
+				const can =
+					Array.from(dt.types).includes('text/plain') || Array.from(dt.types).includes('Text');
+				if (can) {
+					dt.dropEffect = 'copy';
+					setDragOverKey(key);
+				}
+			},
+			onDragLeave: (e: DragEvent) => {
+				const rel = e.relatedTarget as Node | null;
+				if (!rel || !(e.currentTarget as HTMLElement).contains(rel)) {
+					setDragOverKey((k) => (k === key ? null : k));
+				}
+			},
+			onDrop: (e: DragEvent) => onDropField(key, e),
+		}),
+		[onDropField],
 	);
 
 	const onPathClick = useCallback(
@@ -304,8 +358,8 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 						<p className="mt-1 text-muted text-xs">
 							Wiederholenden Knoten wählen und Platzhalter{' '}
 							<code className="rounded bg-slate-800/10 px-1 font-mono">{'{{pfad}}'}</code> von rechts per Klick oder per
-							Ziehen‑und‑Ablegen in die Felder legen — vergleichbar mit dem Zuordnungsschritt und den Import‑Einstellungen von
-							WP&nbsp;All&nbsp;Import (ohne WordPress).
+							Ziehen&nbsp;&amp; Ablegen direkt ins Eingabefeld (nicht nur den Rand) — die Zelle leuchtet beim Darüberziehen.
+							Vergleichbar mit dem Zuordnungsschritt bei WP&nbsp;All&nbsp;Import (ohne WordPress).
 						</p>
 					</div>
 					<button type="button" className="btn btn-ghost shrink-0 text-sm" onClick={onClose}>
@@ -372,26 +426,36 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 								</div>
 
 								<div className="space-y-4">
-									{MAP_KEYS.map((row) => (
-										<label key={row.key} className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-											{row.label}
-											{row.helper ? (
-												<span className="block font-normal lowercase text-slate-400 first-letter:uppercase">
-													{row.helper}
-												</span>
-											) : null}
-											<span
-												onDragOver={(e) => e.preventDefault()}
-												onDrop={(e) => onDropField(row.key, e)}
+									{MAP_KEYS.map((row) => {
+										const dnd = fieldDnDHandlers(row.key);
+										const dropRing =
+											dragOverKey === row.key
+												? 'ring-2 ring-amber-400/90 ring-offset-2 ring-offset-white/80'
+												: '';
+										return (
+											<label
+												key={row.key}
+												className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
 											>
+												{row.label}
+												{row.helper ? (
+													<span className="block font-normal lowercase text-slate-400 first-letter:uppercase">
+														{row.helper}
+													</span>
+												) : null}
 												{row.multiline ? (
 													<textarea
 														value={mapping[row.key]}
 														onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
 														onFocus={() => setLastFocusedKey(row.key)}
+														onDragEnter={dnd.onDragEnter}
+														onDragOver={dnd.onDragOver}
+														onDragLeave={dnd.onDragLeave}
+														onDrop={dnd.onDrop}
+														draggable={false}
 														rows={row.rows ?? 3}
-														className={fieldInputCls(true)}
-														placeholder="Platzhalter hier ablegen oder tippen…"
+														className={`${fieldInputCls(true)} transition-shadow ${dropRing}`}
+														placeholder="Pfad von rechts hierher ziehen oder tippen…"
 														spellCheck={false}
 													/>
 												) : (
@@ -400,13 +464,18 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 														value={mapping[row.key]}
 														onChange={(e) => setMapping((m) => ({ ...m, [row.key]: e.target.value }))}
 														onFocus={() => setLastFocusedKey(row.key)}
-														className={fieldInputCls(false)}
+														onDragEnter={dnd.onDragEnter}
+														onDragOver={dnd.onDragOver}
+														onDragLeave={dnd.onDragLeave}
+														onDrop={dnd.onDrop}
+														draggable={false}
+														className={`${fieldInputCls(false)} transition-shadow ${dropRing}`}
 														spellCheck={false}
 													/>
 												)}
-											</span>
-										</label>
-									))}
+											</label>
+										);
+									})}
 								</div>
 
 								<div className="mt-6 rounded-xl border border-accent/35 bg-accent/10 p-4">
@@ -436,9 +505,9 @@ export function GenericXmlMappingDialog(props: GenericXmlMappingDialogProps) {
 						<div>
 							<h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">Quelle (Repeater / Baum)</h3>
 							<p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-								Verschachtelte Gruppen sind einklappbar (wie ACF‑Repeater/Unterfelder). Platzhalter wie{' '}
+								Verschachtelte Gruppen sind einklappbar (wie ACF‑Repeater/Unterfelder). 								Platzhalter wie{' '}
 								<code className="rounded bg-white/80 px-0.5 font-mono text-[10px]">picture[0]/url</code> per Klick oder
-								Ziehen&nbsp;&amp; Ablegen ins fokussierte Zielfeld übernehmen.
+								auf ein linkes Zielfeld ziehen (Eingabefeld oder mehrzeiliges Feld).
 							</p>
 						</div>
 						<input

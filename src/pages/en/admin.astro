@@ -11,6 +11,7 @@ const homeHref = withLocalePath('/', 'en');
 	locale="en"
 	title="Admin"
 	description="Prime Realty — internal listings console (authorised users only)."
+	chrome={false}
 >
 	<div class="mx-auto max-w-7xl px-4 py-12 md:py-16">
 		<div class="glass-panel px-6 py-8 md:px-10 md:py-10">
@@ -19,7 +20,7 @@ const homeHref = withLocalePath('/', 'en');
 				Password‑protected workspace for authorised team members—capture and refresh listing/exposé data on the catalogue.
 			</p>
 			<p class="mt-4">
-				<a href={homeHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">← Back to website</a>
+				<a href={homeHref} class="text-sm font-semibold text-amber-900 hover:text-amber-950">← Webseite öffnen</a>
 			</p>
 			<div class="mt-10">
 				<AdminApp client:only="react" listingPreviewBase={withLocalePath('/immobilie', 'en')} />
