@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
+import ReactMarkdown from 'react-markdown';
 import type { Listing } from '../../lib/types';
 import type { Locale } from '../../i18n/locale';
 import { numberingLocale } from '../../i18n/locale';
@@ -9,6 +10,10 @@ import { getDb, isFirebaseConfigured } from '../../lib/firebase/client';
 import { unsplashListingHero } from '../../lib/unsplashPlaceholders';
 
 type UiStrings = (typeof copy)['de'];
+
+/** Gleiches Markdown-Styling wie Blog / Textseiten */
+const mdWrap =
+	'max-w-3xl [&_a]:font-medium [&_a]:text-amber-900 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-amber-200 [&_blockquote]:pl-4 [&_blockquote]:text-slate-600 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:text-sm [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-gray-900 [&_h2]:mb-3 [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:mb-2 [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-gray-900 [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-3 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-sm [&_pre]:text-slate-100 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6';
 
 function formatPriceSqm(euro: number | null, locale: Locale): string {
 	if (euro == null) return '–';
@@ -110,6 +115,7 @@ export function ListingDetailClient({
 			: null;
 
 	const heroAlt = firstPhoto && !heroImgBroken ? '' : `${listing.title} – ${L.imgAltFallback}`;
+	const descriptionMd = (listing.description ?? '').trim();
 
 	return (
 		<div className="grid gap-10 lg:grid-cols-[1.2fr_1fr]">
@@ -222,7 +228,13 @@ export function ListingDetailClient({
 				) : null}
 				<div className="mt-8 max-w-none">
 					<h2 className="text-lg font-semibold text-gray-900">{L.description}</h2>
-					<p className="mt-2 leading-relaxed whitespace-pre-wrap text-slate-700">{listing.description || L.noDescription}</p>
+					<div className={`mt-2 text-slate-800 ${mdWrap}`}>
+						{descriptionMd ? (
+							<ReactMarkdown>{descriptionMd}</ReactMarkdown>
+						) : (
+							<p className="leading-relaxed text-slate-700">{L.noDescription}</p>
+						)}
+					</div>
 				</div>
 				<a href={listingsListPath} className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-amber-900 hover:text-amber-950">
 					{L.backToListings}
