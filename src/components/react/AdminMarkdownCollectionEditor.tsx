@@ -161,10 +161,10 @@ export function AdminMarkdownCollectionEditor({ variant }: { variant: Variant })
 		}
 	}
 
-	const heading = isBlog ? 'Blogbeiträge' : 'Textseiten';
+	const heading = isBlog ? 'Blogbeiträge' : 'Seitentexte';
 	const intro = isBlog
 		? 'Beiträge erscheinen unter /blog (nur veröffentlichte). Slug = URL-Teil (z. B. willkommen-in-montenegro).'
-		: 'Zusätzliche Textseiten unter /text (nur veröffentlichte). Für Impressum/Datenschutz nutzen Sie weiter die festen Seiten oder ergänzen hier Editorial.';
+		: 'Hier pflegen Sie die Inhalte für die festen Unterseiten (Über uns, Partner, Impressum, Datenschutz, AGB, Nutzungsbedingungen): Slug exakt wie die Seite, z. B. ueber-uns, partner, impressum, datenschutz, agb, nutzungsbedingungen — je Sprache eigener Eintrag. Nur veröffentlichte Texte erscheinen live. Es gibt keine separate „Texte“-Übersichtsseite mehr.';
 
 	return (
 		<div className="space-y-6">

@@ -16,7 +16,7 @@ export interface BlogPostDoc {
 	updatedAt?: { seconds: number; nanoseconds: number } | null;
 }
 
-/** Freie Textseiten (Collection `siteTexts`) — z. B. Zusatzseiten / Editorial */
+/** Statische Unterseiten (Collection `siteTexts`) — gleicher Slug wie die Route (z. B. ueber-uns, impressum) */
 export interface SiteTextDoc {
 	id?: string;
 	locale: Locale;

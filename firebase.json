@@ -42,6 +42,46 @@
           "source": "/zh/verwaltung",
           "destination": "/zh/admin",
           "type": 301
+        },
+        {
+          "source": "/text",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/text/seite",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/en/text",
+          "destination": "/en/",
+          "type": 301
+        },
+        {
+          "source": "/en/text/seite",
+          "destination": "/en/",
+          "type": 301
+        },
+        {
+          "source": "/ru/text",
+          "destination": "/ru/",
+          "type": 301
+        },
+        {
+          "source": "/ru/text/seite",
+          "destination": "/ru/",
+          "type": 301
+        },
+        {
+          "source": "/zh/text",
+          "destination": "/zh/",
+          "type": 301
+        },
+        {
+          "source": "/zh/text/seite",
+          "destination": "/zh/",
+          "type": 301
         }
       ],
       "headers": [

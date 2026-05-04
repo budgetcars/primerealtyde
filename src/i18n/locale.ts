@@ -17,8 +17,6 @@ const mirroredCanonical = new Set([
 	'/admin',
 	'/blog',
 	'/blog/beitrag',
-	'/text',
-	'/text/seite',
 ]);
 
 const secondaryLocales = ['en', 'ru', 'zh'] as const satisfies readonly Omit<Locale, 'de'>[];

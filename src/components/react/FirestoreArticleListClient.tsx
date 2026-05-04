@@ -9,7 +9,7 @@ type CollectionName = 'blogPosts' | 'siteTexts';
 export type FirestoreArticleListClientProps = {
 	locale: Locale;
 	collection: CollectionName;
-	/** z. B. `/blog/beitrag` oder `/text/beitrag` — mit Sprachpräfix */
+	/** z. B. `/blog/beitrag` — mit Sprachpräfix */
 	articleHrefBase: string;
 	emptyMessage: string;
 	readMoreLabel: string;

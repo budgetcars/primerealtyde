@@ -1237,7 +1237,7 @@ export function AdminApp({ listingPreviewBase = '/immobilie' }: AdminAppProps) {
 						Blog
 					</button>
 					<button type="button" onClick={() => setTab('texts')} className={sideBtn('texts')}>
-						Textseiten
+						Seitentexte
 					</button>
 				</nav>
 			</aside>
